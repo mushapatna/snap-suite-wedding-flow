@@ -1,0 +1,1 @@
+http://localhost:5173/accept-invitation/bccfdab5-e6bc-4435-9de2-e9b5871ae29f
