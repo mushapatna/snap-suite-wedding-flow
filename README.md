@@ -18,56 +18,76 @@ Changes made via Lovable will be committed automatically to this repo.
 
 If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+# Snap Suite Wedding Flow
 
-Follow these steps:
+A comprehensive Wedding Project Management System designed to streamline the workflow for photographers, videographers, and editors.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Features
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+-   **Role-Based Access Control**: Tailored dashboards for Admin, Project Managers, Photographers, Cinematographers, and Editors.
+-   **Project Management**: Create and track wedding projects with detailed event timelines.
+-   **Team Collaboration**: Invite team members, assign tasks, and track progress.
+-   **Task & Checklist System**: Dynamic checklists for events (e.g., equipment prep, shot lists).
+-   **File Submission**: Streamlined submission process for raw and edited files.
+-   **Client Portal**: (Upcoming) View for clients to track their wedding project status.
 
-# Step 3: Install the necessary dependencies.
-npm i
+## Tech Stack
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+-   **Frontend**: React (Vite), Tailwind CSS, Shadcn UI
+-   **Backend**: Django REST Framework (Python)
+-   **Database**: PostgreSQL
+-   **Authentication**: Token-based Authentication (Django Token Auth)
 
-**Edit a file directly in GitHub**
+## Setup Instructions
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Prerequisites
 
-**Use GitHub Codespaces**
+-   Node.js & npm
+-   Python 3.10+
+-   PostgreSQL or Docker
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Backend Setup
 
-## What technologies are used for this project?
+1.  Navigate to `backend/`:
+    ```bash
+    cd backend
+    ```
+2.  Create and activate virtual environment:
+    ```bash
+    python -m venv .venv
+    .\.venv\Scripts\activate  # Windows
+    # source .venv/bin/activate # Mac/Linux
+    ```
+3.  Install dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+4.  Run migrations:
+    ```bash
+    python manage.py migrate
+    ```
+5.  Start server:
+    ```bash
+    python manage.py runserver
+    ```
 
-This project is built with:
+### Frontend Setup
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1.  Navigate to root:
+    ```bash
+    cd ..
+    ```
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+3.  Start dev server:
+    ```bash
+    npm run dev
+    ```
 
-## How can I deploy this project?
+## License
 
-Simply open [Lovable](https://lovable.dev/projects/dce598fb-9b30-4c2a-bf8b-3e6a8071a7a6) and click on Share -> Publish.
+## License
 
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Private / Proprietary
