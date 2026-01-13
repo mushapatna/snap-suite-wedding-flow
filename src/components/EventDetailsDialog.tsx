@@ -66,6 +66,7 @@ interface EventDetailsDialogProps {
     instructions?: string;
   };
   trigger: React.ReactNode;
+  onUpdate?: () => void;
 }
 
 interface TeamContact {
@@ -99,7 +100,7 @@ interface FileSubmission {
   reviewer_notes?: string;
 }
 
-export function EventDetailsDialog({ event, trigger }: EventDetailsDialogProps) {
+export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDialogProps) {
   const [open, setOpen] = useState(false);
   const [teamContacts, setTeamContacts] = useState<TeamContact[]>([]);
   const [checklists, setChecklists] = useState<ChecklistItem[]>([]);
@@ -215,6 +216,7 @@ export function EventDetailsDialog({ event, trigger }: EventDetailsDialogProps) 
         title: "Success",
         description: "Checklist item updated",
       });
+      if (onUpdate) onUpdate();
     } catch (error) {
       console.error("Error updating checklist:", error);
       toast({
@@ -246,6 +248,7 @@ export function EventDetailsDialog({ event, trigger }: EventDetailsDialogProps) 
         title: "Success",
         description: "Checklist item added",
       });
+      if (onUpdate) onUpdate();
     } catch (error) {
       console.error("Error adding checklist item:", error);
       toast({
@@ -386,6 +389,7 @@ export function EventDetailsDialog({ event, trigger }: EventDetailsDialogProps) 
         title: "Task Updated",
         description: "Task status changed successfully",
       });
+      if (onUpdate) onUpdate();
     } catch (error) {
       console.error("Error updating task:", error);
       toast({

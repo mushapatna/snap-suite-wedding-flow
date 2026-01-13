@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -62,15 +62,6 @@ const formSchema = z.object({
   instructions: z.string().optional(),
 });
 
-// Team members data - using state to allow dynamic updates
-const initialTeamMembers = {
-  photographers: ["John Doe", "Jane Smith", "Mike Johnson", "Sarah Connor", "Alex Rodriguez"],
-  cinematographers: ["Alex Brown", "Sarah Wilson", "David Lee", "Emma Stone", "Chris Evans"],
-  droneOperators: ["Tom Clark", "Lisa Taylor", "Chris Martin", "Diana Prince", "Bruce Wayne"],
-  siteManagers: ["Ryan Garcia", "Emma Davis", "Kevin Moore", "Tony Stark", "Peter Parker"],
-  assistants: ["Amy White", "Jason Hall", "Nina Lopez", "Clark Kent", "Lois Lane"],
-};
-
 interface AddEventDialogProps {
   projectId: string;
   onEventAdded: () => void;
@@ -80,9 +71,25 @@ interface AddEventDialogProps {
 export function AddEventDialog({ projectId, onEventAdded, trigger }: AddEventDialogProps) {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [teamMembers, setTeamMembers] = useState(initialTeamMembers);
+
+  // Dynamic team members state
+  const [teamMembers, setTeamMembers] = useState<{
+    photographers: string[];
+    cinematographers: string[];
+    droneOperators: string[];
+    siteManagers: string[];
+    assistants: string[];
+  }>({
+    photographers: [],
+    cinematographers: [],
+    droneOperators: [],
+    siteManagers: [],
+    assistants: [],
+  });
+
   const [addTeamMemberOpen, setAddTeamMemberOpen] = useState(false);
   const { toast } = useToast();
+  const { token } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -104,7 +111,45 @@ export function AddEventDialog({ projectId, onEventAdded, trigger }: AddEventDia
     },
   });
 
-  const { token } = useAuth();
+  // Fetch team members when dialog opens
+  useEffect(() => {
+    if (open && token) {
+      const fetchMembers = async () => {
+        try {
+          const data = await api.get('/contacts/', token);
+          const membersList = Array.isArray(data) ? data : (data.results || []);
+
+          const newTeam = {
+            photographers: [] as string[],
+            cinematographers: [] as string[],
+            droneOperators: [] as string[],
+            siteManagers: [] as string[],
+            assistants: [] as string[],
+          };
+
+          membersList.forEach((m: any) => {
+            const name = m.name;
+            const role = m.role?.toLowerCase() || "";
+            // Default to crew if category is missing or empty (backward compatibility)
+            const categories = (m.category && m.category.length > 0) ? m.category : ["crew"];
+
+            if (categories.includes("crew")) {
+              if (role.includes("photographer")) newTeam.photographers.push(name);
+              if (role.includes("cinematographer") || role.includes("videographer")) newTeam.cinematographers.push(name);
+              if (role.includes("drone")) newTeam.droneOperators.push(name);
+              if (role.includes("manager")) newTeam.siteManagers.push(name);
+              if (role.includes("assistant")) newTeam.assistants.push(name);
+            }
+          });
+
+          setTeamMembers(newTeam);
+        } catch (error) {
+          console.error("Failed to load team members", error);
+        }
+      };
+      fetchMembers();
+    }
+  }, [open, token]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
@@ -156,10 +201,19 @@ export function AddEventDialog({ projectId, onEventAdded, trigger }: AddEventDia
   };
 
   const handleAddTeamMember = (name: string, role: string) => {
-    setTeamMembers(prev => ({
-      ...prev,
-      [role]: [...prev[role as keyof typeof prev], name]
-    }));
+    // This is a simplified local update. 
+    // Ideally, we re-fetch or optimistically update based on precise role mapping
+    const roleLower = role.toLowerCase();
+
+    setTeamMembers(prev => {
+      const newState = { ...prev };
+      if (roleLower.includes("photographer")) newState.photographers = [...prev.photographers, name];
+      else if (roleLower.includes("cinematographer") || roleLower.includes("videographer")) newState.cinematographers = [...prev.cinematographers, name];
+      else if (roleLower.includes("drone")) newState.droneOperators = [...prev.droneOperators, name];
+      else if (roleLower.includes("manager")) newState.siteManagers = [...prev.siteManagers, name];
+      else if (roleLower.includes("assistant")) newState.assistants = [...prev.assistants, name];
+      return newState;
+    });
   };
 
   return (
@@ -414,7 +468,7 @@ export function AddEventDialog({ projectId, onEventAdded, trigger }: AddEventDia
                         </FormControl>
                         <SelectContent>
                           {teamMembers.siteManagers.map((manager) => (
-                            <SelectItem key={manager} value={manager.toLowerCase().replace(" ", "-")}>
+                            <SelectItem key={manager} value={manager}>
                               {manager}
                             </SelectItem>
                           ))}
@@ -439,7 +493,7 @@ export function AddEventDialog({ projectId, onEventAdded, trigger }: AddEventDia
                         </FormControl>
                         <SelectContent>
                           {teamMembers.assistants.map((assistant) => (
-                            <SelectItem key={assistant} value={assistant.toLowerCase().replace(" ", "-")}>
+                            <SelectItem key={assistant} value={assistant}>
                               {assistant}
                             </SelectItem>
                           ))}

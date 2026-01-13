@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -42,6 +42,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   title: z.string().min(1, "Task title is required"),
+  department: z.string().min(1, "Department is required"),
   category: z.string().optional(),
   priority: z.string().optional(),
   due_date: z.date().optional(),
@@ -66,6 +67,7 @@ export function CreateTaskDialog({ projectId, onTaskCreated, trigger }: CreateTa
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
+      department: "photo",
       category: "",
       priority: "",
       assigned_to: "",
@@ -76,6 +78,38 @@ export function CreateTaskDialog({ projectId, onTaskCreated, trigger }: CreateTa
   });
 
   const { token } = useAuth();
+  const [teamMembers, setTeamMembers] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (open && token) {
+      const fetchMembers = async () => {
+        try {
+          const data = await api.get('/contacts/', token);
+          const membersList = Array.isArray(data) ? data : (data.results || []);
+          const postProduction: string[] = [];
+
+          membersList.forEach((m: any) => {
+            const name = m.name;
+            // Default to NO post production if category is missing/empty, unless you want otherwise.
+            // Logic: Only show if explicitly 'post_production' (or if we decide 'crew' is default and this is strict).
+            // User said "Add asks dialog to only show 'Post Production'".
+            const categories = m.category || [];
+            // Note: If data is old/empty, should we show them? 
+            // User request: "provide post production team member option"
+            // I will assume explicit opt-in for post production.
+            if (categories.includes("post_production")) {
+              postProduction.push(name);
+            }
+          });
+
+          setTeamMembers(postProduction);
+        } catch (error) {
+          console.error("Failed to load team members", error);
+        }
+      };
+      fetchMembers();
+    }
+  }, [open, token]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
@@ -83,6 +117,7 @@ export function CreateTaskDialog({ projectId, onTaskCreated, trigger }: CreateTa
       const payload = {
         project: projectId,
         title: values.title,
+        department: values.department,
         category: values.category || null,
         priority: values.priority || null,
         due_date: values.due_date ? format(values.due_date, "yyyy-MM-dd") : null,
@@ -90,7 +125,7 @@ export function CreateTaskDialog({ projectId, onTaskCreated, trigger }: CreateTa
         estimated_hours: values.estimated_hours ? parseInt(values.estimated_hours) : null,
         description: values.description || null,
         expected_deliverables: values.expected_deliverables || null,
-        status: "pending",
+        status: "backlog", // Default to backlog per sketch
       };
 
       await api.post('/tasks/', payload, token);
@@ -136,6 +171,28 @@ export function CreateTaskDialog({ projectId, onTaskCreated, trigger }: CreateTa
                   <FormControl>
                     <Input placeholder="Enter task title" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="department"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Department</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="photo">Photo Team</SelectItem>
+                      <SelectItem value="video">Video Team</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -267,11 +324,9 @@ export function CreateTaskDialog({ projectId, onTaskCreated, trigger }: CreateTa
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="john-doe">John Doe</SelectItem>
-                      <SelectItem value="jane-smith">Jane Smith</SelectItem>
-                      <SelectItem value="mike-johnson">Mike Johnson</SelectItem>
-                      <SelectItem value="sarah-wilson">Sarah Wilson</SelectItem>
-                      <SelectItem value="alex-brown">Alex Brown</SelectItem>
+                      {teamMembers.map((member) => (
+                        <SelectItem key={member} value={member}>{member}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

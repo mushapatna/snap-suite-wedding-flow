@@ -4,6 +4,7 @@ export const api = {
   get: async (endpoint: string, token?: string) => {
     const headers = {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
       ...(token && { Authorization: `Token ${token}` }),
     };
     const response = await fetch(`${BASE_URL}${endpoint}`, { headers });

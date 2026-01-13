@@ -76,7 +76,20 @@ class WeddingProjectViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        queryset = WeddingProject.objects.filter(user=self.request.user)
+        # 1. Projects owned by me
+        # 2. Projects owned by someone who has me in their Team (based on email)
+        
+        user_email = self.request.user.email
+        # Find studio owners who have added this user as a team member
+        owners_owning_me = TeamMemberContact.objects.filter(
+            email=user_email, 
+            status__in=['sent', 'joined'] # Optional: only show if invited/joined
+        ).values_list('owner', flat=True)
+
+        queryset = WeddingProject.objects.filter(
+            Q(user=self.request.user) | Q(user__in=owners_owning_me)
+        ).distinct()
+
         ids = self.request.query_params.get('ids')
         if ids:
             id_list = ids.split(',')
@@ -165,12 +178,17 @@ class FileSubmissionViewSet(viewsets.ModelViewSet):
         return queryset
 
 class TeamMemberContactViewSet(viewsets.ModelViewSet):
-    queryset = TeamMemberContact.objects.all()
     serializer_class = TeamMemberContactSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        if getattr(self.request.user, 'is_anonymous', True):
+            return TeamMemberContact.objects.none()
+        qs = TeamMemberContact.objects.filter(owner=self.request.user)
+        return qs
 
     def perform_create(self, serializer):
-        member = serializer.save()
+        member = serializer.save(owner=self.request.user)
         
         # Auto-send invitation on create
         member.invitation_token = uuid.uuid4()

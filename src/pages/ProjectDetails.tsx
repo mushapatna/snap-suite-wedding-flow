@@ -12,6 +12,12 @@ import { useToast } from "@/hooks/use-toast";
 import { AddEventDialog } from "@/components/AddEventDialog";
 import { CreateTaskDialog } from "@/components/CreateTaskDialog";
 import { EventDetailsDialog } from "@/components/EventDetailsDialog";
+import { EventColumnView } from "@/components/EventColumnView";
+import { TaskKanbanBoard } from "@/components/TaskKanbanBoard";
+import { EventListView } from "@/components/EventListView";
+import { TaskListView } from "@/components/TaskListView";
+import { LayoutList, Kanban } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Project {
   id: string;
@@ -29,6 +35,7 @@ interface Event {
   id: string;
   event_name: string;
   event_date: string;
+  status: string; // Add status field
   location?: string;
   time_from?: string;
   time_to?: string;
@@ -51,6 +58,7 @@ interface Task {
   due_date: string;
   category: string;
   assigned_to: string;
+  department: string;
 }
 
 export default function ProjectDetails() {
@@ -258,137 +266,157 @@ export default function ProjectDetails() {
         </CardContent>
       </Card>
 
-      {/* Events and Tasks Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Event Details */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Event Details</CardTitle>
-            <AddEventDialog
-              projectId={project.id}
-              onEventAdded={handleRefresh}
-              trigger={
-                <Button size="sm" className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Event
-                </Button>
-              }
-            />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {events.length > 0 ? (
-                events.map((event) => {
-                  const eventDate = new Date(event.event_date);
-                  const isEventUpcoming = eventDate > new Date();
-                  return (
-                    <EventDetailsDialog
-                      key={event.id}
-                      event={event}
-                      trigger={
-                        <div className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="font-semibold">{event.event_name}</h4>
-                              <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3" />
-                                  {format(eventDate, "dd/MM/yyyy")}
-                                </div>
-                                {event.location && (
-                                  <div className="flex items-center gap-1">
-                                    <MapPin className="h-3 w-3" />
-                                    {event.location}
-                                  </div>
-                                )}
-                                {event.time_from && event.time_to && (
-                                  <div className="text-xs">
-                                    {event.time_from} - {event.time_to}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <Badge variant={isEventUpcoming ? 'outline' : 'secondary'}>
-                              {isEventUpcoming ? 'Upcoming' : 'Past'}
-                            </Badge>
-                          </div>
-                        </div>
-                      }
-                    />
-                  );
-                })
-              ) : (
-                <div className="text-center text-muted-foreground py-8">
-                  No events added yet. Create your first event to get started.
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      {/* View Toggle and Content */}
+      <Tabs defaultValue="kanban" className="w-full">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Workspace</h2>
+          <TabsList>
+            <TabsTrigger value="kanban" className="flex items-center gap-2">
+              <Kanban className="h-4 w-4" />
+              Board
+            </TabsTrigger>
+            <TabsTrigger value="list" className="flex items-center gap-2">
+              <LayoutList className="h-4 w-4" />
+              List
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        {/* Tasks Section */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Tasks (Editing & Post Production)</CardTitle>
-            <CreateTaskDialog
-              projectId={project.id}
-              onTaskCreated={handleRefresh}
-              trigger={
-                <Button size="sm" className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create Task
-                </Button>
-              }
-            />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {tasks.length > 0 ? (
-                tasks.map((task) => {
-                  const taskDueDate = task.due_date ? new Date(task.due_date) : null;
-                  const getPriorityColor = (priority: string) => {
-                    switch (priority?.toLowerCase()) {
-                      case 'high':
-                        return 'bg-red-50 text-red-700 border-red-200';
-                      case 'medium':
-                        return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-                      case 'low':
-                        return 'bg-green-50 text-green-700 border-green-200';
-                      default:
-                        return 'bg-gray-50 text-gray-700 border-gray-200';
-                    }
-                  };
+        <TabsContent value="kanban" className="space-y-6">
+          {/* Events Board */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Events</CardTitle>
+              <AddEventDialog
+                projectId={project.id}
+                onEventAdded={handleRefresh}
+                trigger={
+                  <Button size="sm" className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Event
+                  </Button>
+                }
+              />
+            </CardHeader>
+            <CardContent>
+              <EventColumnView
+                events={events}
+                title=""
+                onRefresh={handleRefresh}
+              />
+            </CardContent>
+          </Card>
 
-                  return (
-                    <div key={task.id} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-semibold">{task.title}</h4>
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {task.category && <div>Category: {task.category}</div>}
-                            {task.assigned_to && <div>Assigned to: {task.assigned_to}</div>}
-                            {taskDueDate && <div>Due: {format(taskDueDate, "dd/MM/yyyy")}</div>}
-                            {task.status && <div>Status: {task.status}</div>}
-                          </div>
-                        </div>
-                        {task.priority && (
-                          <Badge variant="outline" className={getPriorityColor(task.priority)}>
-                            {task.priority}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="text-center text-muted-foreground py-8">
-                  No tasks yet. Create your first task to get started.
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          {/* Video Tasks Board */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Use 'Department: Video' for Video Tasks</CardTitle>
+              <CreateTaskDialog
+                projectId={project.id}
+                onTaskCreated={handleRefresh}
+                trigger={
+                  <Button size="sm" className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create Task
+                  </Button>
+                }
+              />
+            </CardHeader>
+            <CardContent>
+              <TaskKanbanBoard
+                title="Video Production Tasks"
+                tasks={tasks.filter(t => t.department === 'video')}
+                onTaskUpdate={handleRefresh}
+                columns={[
+                  { id: 'backlog', title: 'Backlog' },
+                  { id: 'in_progress', title: 'In Progress' },
+                  { id: 'completed', title: 'Completed' },
+                  { id: 'in_review', title: 'In Review' },
+                  { id: 'correction', title: 'Correction' },
+                  { id: 'submitted', title: 'Submitted' }
+                ]}
+                onStatusChange={async (taskId, newStatus) => {
+                  try {
+                    await api.patch(`/tasks/${taskId}/`, { status: newStatus }, token);
+                    handleRefresh();
+                  } catch (e) {
+                    console.error("Failed to update task status", e);
+                  }
+                }}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Photo Tasks Board */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Use 'Department: Photo' for Photo Tasks</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TaskKanbanBoard
+                title="Photo Production Tasks"
+                tasks={tasks.filter(t => t.department === 'photo')}
+                onTaskUpdate={handleRefresh}
+                columns={[
+                  { id: 'backlog', title: 'Backlog' },
+                  { id: 'client_review', title: 'Client Review' },
+                  { id: 'editing', title: 'Editing' },
+                  { id: 'printing', title: 'Printing' },
+                  { id: 'delivered', title: 'Delivered' }
+                ]}
+                onStatusChange={async (taskId, newStatus) => {
+                  try {
+                    await api.patch(`/tasks/${taskId}/`, { status: newStatus }, token);
+                    handleRefresh();
+                  } catch (e) {
+                    console.error("Failed to update task status", e);
+                  }
+                }}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="list" className="space-y-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>All Events</CardTitle>
+              <AddEventDialog
+                projectId={project.id}
+                onEventAdded={handleRefresh}
+                trigger={
+                  <Button size="sm" className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Event
+                  </Button>
+                }
+              />
+            </CardHeader>
+            <CardContent>
+              <EventListView events={events} onRefresh={handleRefresh} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>All Tasks</CardTitle>
+              <CreateTaskDialog
+                projectId={project.id}
+                onTaskCreated={handleRefresh}
+                trigger={
+                  <Button size="sm" className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create Task
+                  </Button>
+                }
+              />
+            </CardHeader>
+            <CardContent>
+              <TaskListView tasks={tasks} onRefresh={handleRefresh} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

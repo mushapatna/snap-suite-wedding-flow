@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +35,9 @@ const formSchema = z.object({
   email: z.string().email("Valid email is required"),
   whatsapp: z.string().optional(),
   role: z.string().min(1, "Role is required"),
+  categories: z.array(z.string()).refine((value) => value.length > 0, {
+    message: "You have to select at least one category.",
+  }),
 });
 
 interface AddTeamMemberDialogProps {
@@ -59,6 +63,7 @@ export function AddTeamMemberDialog({
       email: "",
       whatsapp: "",
       role: "",
+      categories: ["crew"], // Default to crew
     },
   });
 
@@ -75,6 +80,7 @@ export function AddTeamMemberDialog({
         role: values.role,
         phone_number: values.whatsapp, // Mapping whatsapp to phone for now or add field
         whatsapp_number: values.whatsapp,
+        category: values.categories, // Send array of categories
       };
 
       await api.post('/contacts/', payload, token);
@@ -172,8 +178,86 @@ export function AddTeamMemberDialog({
                       <SelectItem value="drone_operator">Drone Operator</SelectItem>
                       <SelectItem value="site_manager">Site Manager</SelectItem>
                       <SelectItem value="assistant">Assistant</SelectItem>
+                      <SelectItem value="editor">Editor</SelectItem>
+                      <SelectItem value="album_editor">Album Editor</SelectItem>
+                      <SelectItem value="video_editor">Video Editor</SelectItem>
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="categories"
+              render={() => (
+                <FormItem>
+                  <div className="mb-4">
+                    <FormLabel className="text-base">Team Category</FormLabel>
+                  </div>
+                  <div className="flex gap-4">
+                    <FormField
+                      control={form.control}
+                      name="categories"
+                      render={({ field }) => {
+                        return (
+                          <FormItem
+                            key="crew"
+                            className="flex flex-row items-start space-x-3 space-y-0"
+                          >
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes("crew")}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...field.value, "crew"])
+                                    : field.onChange(
+                                      field.value?.filter(
+                                        (value) => value !== "crew"
+                                      )
+                                    )
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Crew Member
+                            </FormLabel>
+                          </FormItem>
+                        )
+                      }}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="categories"
+                      render={({ field }) => {
+                        return (
+                          <FormItem
+                            key="post_production"
+                            className="flex flex-row items-start space-x-3 space-y-0"
+                          >
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes("post_production")}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...field.value, "post_production"])
+                                    : field.onChange(
+                                      field.value?.filter(
+                                        (value) => value !== "post_production"
+                                      )
+                                    )
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Post Production
+                            </FormLabel>
+                          </FormItem>
+                        )
+                      }}
+                    />
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

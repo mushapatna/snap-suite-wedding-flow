@@ -87,6 +87,14 @@ class Event(models.Model):
     project = models.ForeignKey(WeddingProject, on_delete=models.CASCADE, related_name='events')
     event_name = models.TextField()
     event_date = models.DateField()
+    
+    EVENT_STATUS_CHOICES = [
+        ('upcoming', 'Upcoming'),
+        ('completed', 'Completed'),
+        ('submitted', 'Uploaded/Submitted'),
+    ]
+    status = models.TextField(choices=EVENT_STATUS_CHOICES, default='upcoming')
+
     time_from = models.TimeField(blank=True, null=True)
     time_to = models.TimeField(blank=True, null=True)
     location = models.TextField(blank=True, null=True)
@@ -107,6 +115,13 @@ class Task(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     project = models.ForeignKey(WeddingProject, on_delete=models.CASCADE, related_name='tasks')
     title = models.TextField()
+    
+    DEPARTMENT_CHOICES = [
+        ('photo', 'Photo'),
+        ('video', 'Video'),
+    ]
+    department = models.TextField(choices=DEPARTMENT_CHOICES, default='photo') # Default to photo or null?
+    
     category = models.TextField(blank=True, null=True)
     priority = models.TextField(blank=True, null=True)
     due_date = models.DateField(blank=True, null=True)
@@ -148,7 +163,8 @@ class FileSubmission(models.Model):
 
 class TeamMemberContact(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.TextField(unique=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='team_contacts', null=True, blank=True)
+    name = models.TextField()
     role = models.TextField()
     phone_number = models.TextField(blank=True, null=True)
     whatsapp_number = models.TextField(blank=True, null=True)
@@ -165,6 +181,9 @@ class TeamMemberContact(models.Model):
     invitation_sent_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    # Categories: 'crew', 'post_production'
+    category = ArrayField(models.CharField(max_length=50), default=list, blank=True)
 
 
 class UserPreference(models.Model):

@@ -14,7 +14,7 @@ router.register(r'events', EventViewSet, basename='event')
 router.register(r'tasks', TaskViewSet, basename='task')
 router.register(r'checklists', EventChecklistViewSet, basename='checklist')
 router.register(r'submissions', FileSubmissionViewSet, basename='submission')
-router.register(r'contacts', TeamMemberContactViewSet)
+router.register(r'contacts', TeamMemberContactViewSet, basename='contact')
 router.register(r'preferences', UserPreferenceViewSet, basename='preference')
 
 urlpatterns = [
