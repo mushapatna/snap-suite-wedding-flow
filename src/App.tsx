@@ -25,6 +25,10 @@ import { PhotoEditorDashboard } from "./pages/PhotoEditorDashboard";
 import { VideoEditorDashboard } from "./pages/VideoEditorDashboard";
 import { DroneDashboard } from "./pages/DroneDashboard";
 import { ClientPortal } from "./pages/ClientPortal";
+import { WorkHistory } from "./pages/WorkHistory";
+
+// ... inside App component routes ...
+<Route path="/work-history" element={<ProtectedRoute><WorkHistory /></ProtectedRoute>} />
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { Unauthorized } from "./pages/Unauthorized";
 import { AuthProvider } from "./components/auth/AuthProvider";

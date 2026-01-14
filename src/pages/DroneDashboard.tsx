@@ -3,10 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Plane, 
-  MapPin, 
-  Battery, 
+import {
+  Plane,
+  MapPin,
+  Battery,
   CloudRain,
   Wind,
   Camera,
@@ -15,73 +15,34 @@ import {
 } from "lucide-react";
 import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
+import { format } from "date-fns";
 
-const upcomingFlights = [
-  {
-    event: "Smith & Johnson Wedding",
-    date: "March 16, 2024",
-    time: "3:00 PM - 4:30 PM",
-    location: "Riverside Gardens",
-    weather: "clear",
-    clearance: "approved"
-  },
-  {
-    event: "Davis Engagement Session",
-    date: "March 20, 2024",
-    time: "5:30 PM - 6:30 PM", 
-    location: "Sunset Beach",
-    weather: "partly-cloudy",
-    clearance: "pending"
-  }
-];
+// Define interfaces matching our API
+interface ProjectDetails {
+  id: string;
+  couple_name: string;
+  event_type: string;
+  location: string;
+}
 
-const flightLogs = [
-  {
-    date: "March 12, 2024",
-    event: "Brown Wedding",
-    flightTime: "45 minutes",
-    shots: 67,
-    weather: "clear",
-    incidents: "none"
-  },
-  {
-    date: "March 10, 2024",
-    event: "Johnson Anniversary",
-    flightTime: "30 minutes",
-    shots: 45,
-    weather: "windy",
-    incidents: "none"
-  }
-];
+interface Event {
+  id: string;
+  event_name: string;
+  event_date: string;
+  time_from?: string;
+  time_to?: string;
+  location?: string;
+  status: string;
+  drone_operator?: string;
+  project_details?: ProjectDetails; // populated by serializer
+}
 
-const equipment = [
-  {
-    item: "DJI Mavic 3 - Unit 1",
-    battery: 95,
-    status: "ready",
-    lastMaintenance: "March 5, 2024"
-  },
-  {
-    item: "DJI Mavic 3 - Unit 2",
-    battery: 67,
-    status: "charging",
-    lastMaintenance: "March 1, 2024"
-  },
-  {
-    item: "Extra Battery Pack 1",
-    battery: 100,
-    status: "ready",
-    lastMaintenance: "March 8, 2024"
-  },
-  {
-    item: "Extra Battery Pack 2",
-    battery: 89,
-    status: "ready",
-    lastMaintenance: "March 8, 2024"
-  }
-];
+// Mock data
 
-const weatherData = [
+
+const mockWeatherData = [
   {
     metric: "Wind Speed",
     value: "8 mph",
@@ -124,12 +85,41 @@ const quickActions = [
 ];
 
 export const DroneDashboard = () => {
-  const { user } = useAuth();
+  const { user, profile, token } = useAuth();
+  const [upcomingFlights, setUpcomingFlights] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!token || !profile?.full_name) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const eventsData = await api.get('/events/', token);
+        const myName = profile.full_name;
+
+        // Filter events where the user is assigned as drone operator
+        const myEvents = eventsData.filter((e: Event) =>
+          e.drone_operator && e.drone_operator.toLowerCase().includes(myName.toLowerCase())
+        );
+
+        setUpcomingFlights(myEvents.sort((a: any, b: any) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()));
+      } catch (error) {
+        console.error("Failed to fetch dashboard data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [token, profile]);
 
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader user={user} />
-      
+
       <div className="container mx-auto p-6 space-y-8">
         {/* Welcome Section */}
         <motion.div
@@ -140,7 +130,7 @@ export const DroneDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-heading font-bold text-foreground">
-                Drone Operator Dashboard
+                Hello, {profile?.full_name || user?.username}
               </h1>
               <p className="text-muted-foreground mt-1">
                 Capture breathtaking aerial footage
@@ -199,7 +189,7 @@ export const DroneDashboard = () => {
               <CloudRain className="w-5 h-5 text-muted-foreground" />
             </div>
             <div className="space-y-4">
-              {weatherData.map((weather, index) => {
+              {mockWeatherData.map((weather, index) => {
                 const Icon = weather.icon;
                 return (
                   <div key={index} className="flex items-center justify-between">
@@ -209,10 +199,10 @@ export const DroneDashboard = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium">{weather.value}</p>
-                      <Badge 
+                      <Badge
                         variant={
                           weather.status === 'excellent' ? 'default' :
-                          weather.status === 'good' ? 'secondary' : 'outline'
+                            weather.status === 'good' ? 'secondary' : 'outline'
                         }
                         className="text-xs"
                       >
@@ -226,110 +216,43 @@ export const DroneDashboard = () => {
           </Card>
 
           {/* Upcoming Flights */}
-          <div className="lg:col-span-2">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="lg:col-span-2"
+          >
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">Upcoming Flights</h2>
                 <MapPin className="w-5 h-5 text-muted-foreground" />
               </div>
               <div className="space-y-4">
-                {upcomingFlights.map((flight, index) => (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium">{flight.event}</h3>
-                      <div className="flex items-center gap-2">
-                        <Badge 
-                          variant={flight.clearance === 'approved' ? 'default' : 'secondary'}
-                        >
-                          {flight.clearance}
-                        </Badge>
-                        <Badge 
-                          variant={
-                            flight.weather === 'clear' ? 'default' :
-                            flight.weather === 'partly-cloudy' ? 'secondary' : 'outline'
-                          }
-                        >
-                          {flight.weather}
-                        </Badge>
+                {upcomingFlights.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">No upcoming flights assigned.</p>
+                ) : (
+                  upcomingFlights.map((flight, index) => (
+                    <div key={index} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-medium">{flight.project_details?.couple_name || flight.event_name}</h3>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={flight.status === 'upcoming' ? 'default' : 'secondary'}
+                          >
+                            {flight.status === 'upcoming' ? 'Approved' : flight.status}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p>{format(new Date(flight.event_date), 'MMMM d, yyyy')} • {flight.time_from || 'TBD'}</p>
+                        <p>{flight.location || flight.project_details?.location}</p>
                       </div>
                     </div>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>{flight.date} • {flight.time}</p>
-                      <p>{flight.location}</p>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </Card>
-          </div>
-        </motion.div>
-
-        {/* Equipment Status & Flight Logs */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-        >
-          {/* Equipment Status */}
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Equipment Status</h2>
-              <Battery className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <div className="space-y-3">
-              {equipment.map((item, index) => (
-                <div key={index} className="border rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium text-sm">{item.item}</h3>
-                    <Badge 
-                      variant={
-                        item.status === 'ready' ? 'default' :
-                        item.status === 'charging' ? 'secondary' : 'destructive'
-                      }
-                      className="text-xs"
-                    >
-                      {item.status}
-                    </Badge>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span>Battery Level</span>
-                      <span>{item.battery}%</span>
-                    </div>
-                    <Progress value={item.battery} className="h-2" />
-                    <p className="text-xs text-muted-foreground">
-                      Last maintenance: {item.lastMaintenance}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Recent Flight Logs */}
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Recent Flight Logs</h2>
-              <Plane className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <div className="space-y-3">
-              {flightLogs.map((log, index) => (
-                <div key={index} className="border rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium text-sm">{log.event}</h3>
-                    <span className="text-xs text-muted-foreground">{log.date}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                    <div>Flight time: {log.flightTime}</div>
-                    <div>Shots captured: {log.shots}</div>
-                    <div>Weather: {log.weather}</div>
-                    <div>Incidents: {log.incidents}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
+          </motion.div>
         </motion.div>
       </div>
     </div>

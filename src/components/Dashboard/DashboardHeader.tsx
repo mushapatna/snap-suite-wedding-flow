@@ -48,29 +48,29 @@ const getRoleNavigation = (roles: any[]) => {
     case 'photographer':
       return [
         { name: 'Dashboard', path: '/photographer-dashboard' },
-        { name: 'Projects', path: '/projects' },
+        { name: 'Work History', path: '/work-history' },
         { name: 'Calendar', path: '/calendar' }
       ];
     case 'cinematographer':
       return [
         { name: 'Dashboard', path: '/cinematographer-dashboard' },
-        { name: 'Projects', path: '/projects' },
+        { name: 'Work History', path: '/work-history' },
         { name: 'Calendar', path: '/calendar' }
       ];
     case 'photo_editor':
       return [
         { name: 'Dashboard', path: '/photo-editor-dashboard' },
-        { name: 'Projects', path: '/projects' }
+        { name: 'Work History', path: '/work-history' }
       ];
     case 'video_editor':
       return [
         { name: 'Dashboard', path: '/video-editor-dashboard' },
-        { name: 'Projects', path: '/projects' }
+        { name: 'Work History', path: '/work-history' }
       ];
     case 'drone_operator':
       return [
         { name: 'Dashboard', path: '/drone-dashboard' },
-        { name: 'Projects', path: '/projects' },
+        { name: 'Work History', path: '/work-history' },
         { name: 'Calendar', path: '/calendar' }
       ];
     case 'client':

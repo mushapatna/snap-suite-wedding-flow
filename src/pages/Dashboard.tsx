@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { WelcomeSection } from "@/components/Dashboard/WelcomeSection";
@@ -9,6 +10,25 @@ import { useAuth } from "@/hooks/useAuth";
 
 const Dashboard = () => {
   const { user, profile, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && profile) {
+      const role = profile.role;
+      if (role === 'photographer') {
+        navigate('/photographer-dashboard');
+      } else if (role === 'cinematographer') {
+        navigate('/cinematographer-dashboard');
+      } else if (role === 'photo_editor') {
+        navigate('/photo-editor-dashboard');
+      } else if (role === 'video_editor') {
+        navigate('/video-editor-dashboard');
+      } else if (role === 'drone_operator') {
+        navigate('/drone-dashboard');
+      }
+      // studio_owner and project_manager stay here
+    }
+  }, [profile, authLoading, navigate]);
 
   if (authLoading) {
     return (
@@ -28,7 +48,7 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <WelcomeSection profile={profile} />
+          <WelcomeSection profile={profile as any} />
         </motion.div>
 
         <motion.div

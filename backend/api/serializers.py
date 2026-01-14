@@ -74,11 +74,13 @@ class WeddingProjectSerializer(serializers.ModelSerializer):
         extra_kwargs = {'user': {'read_only': True}}
 
 class EventSerializer(serializers.ModelSerializer):
+    project_details = WeddingProjectSerializer(source='project', read_only=True)
     class Meta:
         model = Event
         fields = '__all__'
 
 class TaskSerializer(serializers.ModelSerializer):
+    project_details = WeddingProjectSerializer(source='project', read_only=True)
     class Meta:
         model = Task
         fields = '__all__'

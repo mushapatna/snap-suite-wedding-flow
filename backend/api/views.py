@@ -104,7 +104,16 @@ class EventViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        queryset = Event.objects.filter(project__user=self.request.user)
+        user_email = self.request.user.email
+        owners_owning_me = TeamMemberContact.objects.filter(
+            email=user_email, 
+            status__in=['sent', 'joined']
+        ).values_list('owner', flat=True)
+
+        queryset = Event.objects.filter(
+            Q(project__user=self.request.user) | Q(project__user__in=owners_owning_me)
+        ).distinct()
+
         project_id = self.request.query_params.get('project_id')
         start_date = self.request.query_params.get('start_date')
         end_date = self.request.query_params.get('end_date')
@@ -118,11 +127,11 @@ class EventViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(event_date__lte=end_date)
         if assigned_to:
             queryset = queryset.filter(
-                Q(photographer__iexact=assigned_to) |
-                Q(cinematographer__iexact=assigned_to) |
-                Q(drone_operator__iexact=assigned_to) |
-                Q(site_manager__iexact=assigned_to) |
-                Q(assistant__iexact=assigned_to)
+                Q(photographer__icontains=assigned_to) |
+                Q(cinematographer__icontains=assigned_to) |
+                Q(drone_operator__icontains=assigned_to) |
+                Q(site_manager__icontains=assigned_to) |
+                Q(assistant__icontains=assigned_to)
             )
             
         return queryset
@@ -132,7 +141,16 @@ class TaskViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        queryset = Task.objects.filter(project__user=self.request.user)
+        user_email = self.request.user.email
+        owners_owning_me = TeamMemberContact.objects.filter(
+            email=user_email, 
+            status__in=['sent', 'joined']
+        ).values_list('owner', flat=True)
+
+        queryset = Task.objects.filter(
+            Q(project__user=self.request.user) | Q(project__user__in=owners_owning_me)
+        ).distinct()
+
         project_id = self.request.query_params.get('project_id')
         start_date = self.request.query_params.get('start_date')
         end_date = self.request.query_params.get('end_date')
@@ -145,7 +163,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         if end_date:
             queryset = queryset.filter(due_date__lte=end_date)
         if assigned_to:
-            queryset = queryset.filter(assigned_to__iexact=assigned_to)
+            queryset = queryset.filter(assigned_to__icontains=assigned_to)
         
         return queryset
 
@@ -155,7 +173,15 @@ class EventChecklistViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        queryset = EventChecklist.objects.filter(event__project__user=self.request.user)
+        user_email = self.request.user.email
+        owners_owning_me = TeamMemberContact.objects.filter(
+            email=user_email, 
+            status__in=['sent', 'joined']
+        ).values_list('owner', flat=True)
+
+        queryset = EventChecklist.objects.filter(
+            Q(event__project__user=self.request.user) | Q(event__project__user__in=owners_owning_me)
+        ).distinct()
         event_id = self.request.query_params.get('event_id')
         if event_id:
             queryset = queryset.filter(event_id=event_id)
@@ -166,7 +192,15 @@ class FileSubmissionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        queryset = FileSubmission.objects.filter(event__project__user=self.request.user)
+        user_email = self.request.user.email
+        owners_owning_me = TeamMemberContact.objects.filter(
+            email=user_email, 
+            status__in=['sent', 'joined']
+        ).values_list('owner', flat=True)
+
+        queryset = FileSubmission.objects.filter(
+            Q(event__project__user=self.request.user) | Q(event__project__user__in=owners_owning_me)
+        ).distinct()
         team_member_name = self.request.query_params.get('team_member_name')
         event_id = self.request.query_params.get('event_id')
         
@@ -184,7 +218,11 @@ class TeamMemberContactViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if getattr(self.request.user, 'is_anonymous', True):
             return TeamMemberContact.objects.none()
-        qs = TeamMemberContact.objects.filter(owner=self.request.user)
+        
+        user = self.request.user
+        qs = TeamMemberContact.objects.filter(
+            Q(owner=user) | Q(email=user.email)
+        )
         return qs
 
     def perform_create(self, serializer):

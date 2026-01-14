@@ -1,24 +1,4 @@
-# Welcome to your Lovable project
-
-## Project info
-
-**URL**: https://lovable.dev/projects/dce598fb-9b30-4c2a-bf8b-3e6a8071a7a6
-
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/dce598fb-9b30-4c2a-bf8b-3e6a8071a7a6) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-# Snap Suite Wedding Flow
+# Snap Suite a Wedding Photography and Videography Agency Management Tool
 
 A comprehensive Wedding Project Management System designed to streamline the workflow for photographers, videographers, and editors.
 
