@@ -1,0 +1,9 @@
+@echo off
+echo Adding files to git...
+git add .
+echo Committing changes...
+git commit -m "Update README and apply latest fixes from session"
+echo Pushing to GitHub...
+git push
+echo Done!
+pause

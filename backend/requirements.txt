@@ -1,0 +1,8 @@
+django>=5.0
+djangorestframework
+django-cors-headers
+psycopg2-binary
+python-dotenv
+django-allauth>=64.0.0
+dj-rest-auth>=6.0.0
+requests>=2.31.0
