@@ -22,9 +22,8 @@ export const useAuth = () => {
     }
   }
 
-  // Adapt to Supabase User shape if needed, or just return my User
-  // Consumers expect just 'user' object. My user object has {id, username, email}.
-  // Supabase user has {id, email, ...}. Compatible enough.
+  // Consumbers expect 'user' object.
+
 
   const signIn = async (email: string, password: string) => {
     const result = await login(email, password); // Note: LoginView expects username/password usually? user/pass. 

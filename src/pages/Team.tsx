@@ -133,38 +133,8 @@ const Team = () => {
       setMemberToDelete(null);
     }
 
-    /*
-    setProcessingActions(prev => ({ ...prev, [memberToDelete.id]: true }));
 
-    try {
-      const { error } = await supabase
-        .from('team_member_contacts')
-        .delete()
-        .eq('id', memberToDelete.id);
 
-      if (error) {
-        throw error;
-      }
-
-      toast({
-        title: "Team member removed",
-        description: `${memberToDelete.name} has been removed from your team`,
-      });
-
-      fetchTeamMembers();
-    } catch (error) {
-      console.error("Error deleting team member:", error);
-      toast({
-        title: "Error",
-        description: "Failed to remove team member",
-        variant: "destructive",
-      });
-    } finally {
-      setProcessingActions(prev => ({ ...prev, [memberToDelete.id]: false }));
-      setDeleteDialogOpen(false);
-      setMemberToDelete(null);
-    }
-    */
   };
 
   const getStatusBadgeVariant = (status: string) => {
