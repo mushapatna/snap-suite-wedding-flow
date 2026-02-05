@@ -27,7 +27,8 @@ const getRoleNavigation = (roles: any[]) => {
 
   const role = roles[0].role;
   const baseNav = [
-    { name: 'Dashboard', path: '/dashboard' }
+    { name: 'Dashboard', path: '/dashboard' },
+    { name: 'Tasks', path: '/tasks' }
   ];
 
   switch (role) {
@@ -35,6 +36,7 @@ const getRoleNavigation = (roles: any[]) => {
       return [
         { name: 'Admin Dashboard', path: '/admin-dashboard' },
         { name: 'Projects', path: '/projects' },
+        { name: 'Tasks', path: '/tasks' },
         { name: 'Team', path: '/team' },
         { name: 'Settings', path: '/settings' }
       ];
@@ -42,34 +44,40 @@ const getRoleNavigation = (roles: any[]) => {
       return [
         { name: 'Dashboard', path: '/dashboard' },
         { name: 'Projects', path: '/projects' },
+        { name: 'Tasks', path: '/tasks' },
         { name: 'Team', path: '/team' },
         { name: 'Settings', path: '/settings' }
       ];
     case 'photographer':
       return [
         { name: 'Dashboard', path: '/photographer-dashboard' },
+        { name: 'Tasks', path: '/tasks' },
         { name: 'Work History', path: '/work-history' },
         { name: 'Calendar', path: '/calendar' }
       ];
     case 'cinematographer':
       return [
         { name: 'Dashboard', path: '/cinematographer-dashboard' },
+        { name: 'Tasks', path: '/tasks' },
         { name: 'Work History', path: '/work-history' },
         { name: 'Calendar', path: '/calendar' }
       ];
     case 'photo_editor':
       return [
         { name: 'Dashboard', path: '/photo-editor-dashboard' },
+        { name: 'Tasks', path: '/tasks' },
         { name: 'Work History', path: '/work-history' }
       ];
     case 'video_editor':
       return [
         { name: 'Dashboard', path: '/video-editor-dashboard' },
+        { name: 'Tasks', path: '/tasks' },
         { name: 'Work History', path: '/work-history' }
       ];
     case 'drone_operator':
       return [
         { name: 'Dashboard', path: '/drone-dashboard' },
+        { name: 'Tasks', path: '/tasks' },
         { name: 'Work History', path: '/work-history' },
         { name: 'Calendar', path: '/calendar' }
       ];

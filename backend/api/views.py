@@ -59,6 +59,19 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
 
 
+class TeamAccessMixin:
+    """
+    Mixin to filter querysets based on team membership.
+    returns:
+    - Owners owning me (list of IDs)
+    """
+    def get_owners_owning_me(self):
+        user_email = self.request.user.email
+        return TeamMemberContact.objects.filter(
+            email=user_email, 
+            status__in=['sent', 'joined']
+        ).values_list('owner', flat=True)
+
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
@@ -71,20 +84,12 @@ class ProfileViewSet(viewsets.ModelViewSet):
              return Profile.objects.all()
         return Profile.objects.filter(user=user)
 
-class WeddingProjectViewSet(viewsets.ModelViewSet):
+class WeddingProjectViewSet(TeamAccessMixin, viewsets.ModelViewSet):
     serializer_class = WeddingProjectSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # 1. Projects owned by me
-        # 2. Projects owned by someone who has me in their Team (based on email)
-        
-        user_email = self.request.user.email
-        # Find studio owners who have added this user as a team member
-        owners_owning_me = TeamMemberContact.objects.filter(
-            email=user_email, 
-            status__in=['sent', 'joined'] # Optional: only show if invited/joined
-        ).values_list('owner', flat=True)
+        owners_owning_me = self.get_owners_owning_me()
 
         queryset = WeddingProject.objects.filter(
             Q(user=self.request.user) | Q(user__in=owners_owning_me)
@@ -99,18 +104,15 @@ class WeddingProjectViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-class EventViewSet(viewsets.ModelViewSet):
+class EventViewSet(TeamAccessMixin, viewsets.ModelViewSet):
     serializer_class = EventSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        user_email = self.request.user.email
-        owners_owning_me = TeamMemberContact.objects.filter(
-            email=user_email, 
-            status__in=['sent', 'joined']
-        ).values_list('owner', flat=True)
+        owners_owning_me = self.get_owners_owning_me()
 
-        queryset = Event.objects.filter(
+        # Fix N+1: select_related('project')
+        queryset = Event.objects.select_related('project').filter(
             Q(project__user=self.request.user) | Q(project__user__in=owners_owning_me)
         ).distinct()
 
@@ -136,20 +138,39 @@ class EventViewSet(viewsets.ModelViewSet):
             
         return queryset
 
-class TaskViewSet(viewsets.ModelViewSet):
+class TaskViewSet(TeamAccessMixin, viewsets.ModelViewSet):
     serializer_class = TaskSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        user_email = self.request.user.email
-        owners_owning_me = TeamMemberContact.objects.filter(
-            email=user_email, 
-            status__in=['sent', 'joined']
-        ).values_list('owner', flat=True)
+        owners_owning_me = self.get_owners_owning_me()
 
-        queryset = Task.objects.filter(
+        # Fix N+1: select_related('project')
+        queryset = Task.objects.select_related('project').filter(
             Q(project__user=self.request.user) | Q(project__user__in=owners_owning_me)
         ).distinct()
+
+        # Role-based filtering
+        try:
+            profile = self.request.user.profile
+            # If not owner/manager, restrict tasks
+            if profile.role not in ['studio_owner', 'project_manager', 'admin']:
+                # Filter by assigned_to matching full_name or role
+                # Case-insensitive matching
+                queries = Q()
+                if profile.full_name:
+                    queries |= Q(assigned_to__iexact=profile.full_name)
+                if profile.role:
+                    queries |= Q(assigned_to__iexact=profile.role)
+                
+                if not queries:
+                    # If no name/role to match, return empty (or decided behavior)
+                    # For now, return none if they have no identity to match against
+                    return Task.objects.none()
+                    
+                queryset = queryset.filter(queries)
+        except Profile.DoesNotExist:
+            pass # Should unlikely happen for authenticated users, but safe fallthrough
 
         project_id = self.request.query_params.get('project_id')
         start_date = self.request.query_params.get('start_date')
@@ -168,16 +189,12 @@ class TaskViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class EventChecklistViewSet(viewsets.ModelViewSet):
+class EventChecklistViewSet(TeamAccessMixin, viewsets.ModelViewSet):
     serializer_class = EventChecklistSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        user_email = self.request.user.email
-        owners_owning_me = TeamMemberContact.objects.filter(
-            email=user_email, 
-            status__in=['sent', 'joined']
-        ).values_list('owner', flat=True)
+        owners_owning_me = self.get_owners_owning_me()
 
         queryset = EventChecklist.objects.filter(
             Q(event__project__user=self.request.user) | Q(event__project__user__in=owners_owning_me)
@@ -187,16 +204,12 @@ class EventChecklistViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(event_id=event_id)
         return queryset
 
-class FileSubmissionViewSet(viewsets.ModelViewSet):
+class FileSubmissionViewSet(TeamAccessMixin, viewsets.ModelViewSet):
     serializer_class = FileSubmissionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        user_email = self.request.user.email
-        owners_owning_me = TeamMemberContact.objects.filter(
-            email=user_email, 
-            status__in=['sent', 'joined']
-        ).values_list('owner', flat=True)
+        owners_owning_me = self.get_owners_owning_me()
 
         queryset = FileSubmission.objects.filter(
             Q(event__project__user=self.request.user) | Q(event__project__user__in=owners_owning_me)

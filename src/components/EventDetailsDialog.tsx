@@ -116,6 +116,15 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
   const [newComments, setNewComments] = useState<Record<string, string>>({});
   const [showTaskForm, setShowTaskForm] = useState<Record<string, boolean>>({});
   const [newTask, setNewTask] = useState<Record<string, { title: string; description: string; priority: string; due_date: string }>>({});
+
+  // Edit Mode State
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState(event);
+
+  useEffect(() => {
+    setEditForm(event);
+  }, [event]);
+
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -403,6 +412,40 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
   const teamMembers = getTeamMembers();
   const progressPercentage = getProgressPercentage();
 
+  const handleSaveEvent = async () => {
+    if (!token) return;
+    try {
+      const payload = {
+        event_name: editForm.event_name,
+        event_date: editForm.event_date,
+        time_from: editForm.time_from,
+        time_to: editForm.time_to,
+        location: editForm.location,
+        google_map_link: editForm.google_map_link,
+        details: editForm.details,
+        instructions: editForm.instructions,
+      };
+
+      await api.patch(`/events/${event.id}/`, payload, token);
+
+      toast({
+        title: "Success",
+        description: "Event details updated successfully",
+      });
+
+      setIsEditing(false);
+      if (onUpdate) onUpdate();
+
+    } catch (error) {
+      console.error("Error updating event:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update event details",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -435,79 +478,164 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
           <TabsContent value="overview" className="space-y-6">
             {/* Event Information */}
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle>Event Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Date:</span>
-                      <span>{format(eventDate, "PPP")}</span>
-                      <Badge variant={isUpcoming ? "default" : "secondary"}>
-                        {isUpcoming ? "Upcoming" : "Past"}
-                      </Badge>
-                    </div>
-
-                    {(event.time_from || event.time_to) && (
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Time:</span>
-                        <span>
-                          {event.time_from && event.time_to
-                            ? `${event.time_from} - ${event.time_to}`
-                            : event.time_from || event.time_to
-                          }
-                        </span>
-                      </div>
-                    )}
-
-                    {event.location && (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Location:</span>
-                        <span>{event.location}</span>
-                        {event.google_map_link && (
-                          <Button variant="ghost" size="sm" asChild>
-                            <a href={event.google_map_link} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Team Size:</span>
-                      <span>{teamMembers.length} members</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Progress:</span>
-                      <span>{progressPercentage}% complete</span>
-                    </div>
-                  </div>
-                </div>
-
-                {event.details && (
-                  <div className="space-y-2">
-                    <span className="font-medium">Description:</span>
-                    <p className="text-muted-foreground">{event.details}</p>
+                {!isEditing ? (
+                  <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Edit Details
+                  </Button>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+                      Cancel
+                    </Button>
+                    <Button size="sm" onClick={handleSaveEvent}>
+                      Save Changes
+                    </Button>
                   </div>
                 )}
-
-                {event.instructions && (
-                  <div className="space-y-2">
-                    <span className="font-medium">Special Instructions:</span>
-                    <div className="p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
-                      <p className="text-yellow-800">{event.instructions}</p>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-4">
+                {isEditing ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Event Name</label>
+                        <Input
+                          value={editForm.event_name}
+                          onChange={(e) => setEditForm({ ...editForm, event_name: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Date</label>
+                        <Input
+                          type="date"
+                          value={editForm.event_date}
+                          onChange={(e) => setEditForm({ ...editForm, event_date: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Time From</label>
+                        <Input
+                          type="time"
+                          value={editForm.time_from || ''}
+                          onChange={(e) => setEditForm({ ...editForm, time_from: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Time To</label>
+                        <Input
+                          type="time"
+                          value={editForm.time_to || ''}
+                          onChange={(e) => setEditForm({ ...editForm, time_to: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <label className="text-sm font-medium">Location</label>
+                        <Input
+                          value={editForm.location || ''}
+                          onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <label className="text-sm font-medium">Google Map Link</label>
+                        <Input
+                          value={editForm.google_map_link || ''}
+                          onChange={(e) => setEditForm({ ...editForm, google_map_link: e.target.value })}
+                          placeholder="https://maps.google.com/..."
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Description</label>
+                      <Textarea
+                        value={editForm.details || ''}
+                        onChange={(e) => setEditForm({ ...editForm, details: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Special Instructions</label>
+                      <Textarea
+                        value={editForm.instructions || ''}
+                        onChange={(e) => setEditForm({ ...editForm, instructions: e.target.value })}
+                        className="border-yellow-200 focus-visible:ring-yellow-400"
+                      />
                     </div>
                   </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">Date:</span>
+                          <span>{format(eventDate, "PPP")}</span>
+                          <Badge variant={isUpcoming ? "default" : "secondary"}>
+                            {isUpcoming ? "Upcoming" : "Past"}
+                          </Badge>
+                        </div>
+
+                        {(event.time_from || event.time_to) && (
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">Time:</span>
+                            <span>
+                              {event.time_from && event.time_to
+                                ? `${event.time_from} - ${event.time_to}`
+                                : event.time_from || event.time_to
+                              }
+                            </span>
+                          </div>
+                        )}
+
+                        {event.location && (
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">Location:</span>
+                            <span>{event.location}</span>
+                            {event.google_map_link && (
+                              <Button variant="ghost" size="sm" asChild>
+                                <a href={event.google_map_link} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">Team Size:</span>
+                          <span>{teamMembers.length} members</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">Progress:</span>
+                          <span>{progressPercentage}% complete</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {event.details && (
+                      <div className="space-y-2">
+                        <span className="font-medium">Description:</span>
+                        <p className="text-muted-foreground">{event.details}</p>
+                      </div>
+                    )}
+
+                    {event.instructions && (
+                      <div className="space-y-2">
+                        <span className="font-medium">Special Instructions:</span>
+                        <div className="p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+                          <p className="text-yellow-800">{event.instructions}</p>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
