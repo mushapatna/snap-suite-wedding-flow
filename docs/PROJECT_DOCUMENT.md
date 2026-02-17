@@ -80,6 +80,7 @@ From this point onward:
 | Date | Area | Change Summary | Validation | Owner |
 |------|------|----------------|------------|-------|
 | 2026-02-17 | Documentation | Created baseline project document and initial targeted quality uplift plan. | Manual review | AI agent |
+| 2026-02-17 | Phase 1 Quality Gates | Implemented targeted frontend lint/type cleanup for auth/dashboard/tasks modules, added backend smoke tests for login and project permissions, and added missing `PyJWT` dependency to unblock Django checks. | `npx eslint ...`, `python3 -m pytest -q`, `python3 manage.py check` | AI agent |
 
 ## 8) Open Questions
 1. Which deployment environments are currently active (dev/staging/prod)?

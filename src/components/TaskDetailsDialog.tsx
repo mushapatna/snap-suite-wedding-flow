@@ -69,6 +69,11 @@ interface Task {
     expected_deliverables?: string;
 }
 
+interface TeamMemberContact {
+    name: string;
+    category?: string[];
+}
+
 interface TaskDetailsDialogProps {
     task: Task;
     onTaskUpdated: () => void;
@@ -91,7 +96,7 @@ export function TaskDetailsDialog({ task, onTaskUpdated, trigger }: TaskDetailsD
                     const membersList = Array.isArray(data) ? data : (data.results || []);
                     const postProduction: string[] = [];
 
-                    membersList.forEach((m: any) => {
+                    membersList.forEach((m: TeamMemberContact) => {
                         const name = m.name;
                         const categories = m.category || [];
                         if (categories.includes("post_production")) {
@@ -149,11 +154,11 @@ export function TaskDetailsDialog({ task, onTaskUpdated, trigger }: TaskDetailsD
 
             onTaskUpdated();
             setOpen(false);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error updating task:", error);
             toast({
                 title: "Error",
-                description: error.message || "Failed to update task",
+                description: error instanceof Error ? error.message : "Failed to update task",
                 variant: "destructive",
             });
         } finally {
