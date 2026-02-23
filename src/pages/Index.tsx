@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
 import { useRef } from "react";
 import { Link } from "react-router-dom";
+import { Logo } from "@/components/ui/Logo";
 
 const Index = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -54,7 +55,7 @@ const Index = () => {
       icon: Upload
     },
     {
-      step: "02", 
+      step: "02",
       title: "Add Your Team or Freelancers",
       description: "Invite photographers, videographers, editors with specific role permissions",
       icon: Users
@@ -75,21 +76,21 @@ const Index = () => {
 
   const testimonials = [
     {
-      quote: "SnapSuite transformed our chaotic workflow into a seamless machine. We've delivered 50+ weddings stress-free!",
+      quote: "EVENTPIXIO transformed our chaotic workflow into a seamless machine. We've delivered 50+ weddings stress-free!",
       author: "Sarah Chen",
       company: "Crystal Eye Studio",
       rating: 5
     },
     {
       quote: "No more WhatsApp chaos! Our team efficiency increased 300% and clients love the professional delivery.",
-      author: "Michael Rodriguez", 
+      author: "Michael Rodriguez",
       company: "Golden Hour Films",
       rating: 5
     },
     {
       quote: "The client portal feature alone has generated 40% more referrals. Our delivery has never been this professional.",
       author: "Emma Thompson",
-      company: "Eternal Moments Photography", 
+      company: "Eternal Moments Photography",
       rating: 5
     }
   ];
@@ -130,7 +131,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Sticky Navigation */}
-      <motion.nav 
+      <motion.nav
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -138,33 +139,32 @@ const Index = () => {
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <motion.div 
+            <motion.div
               className="flex items-center"
               whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 400, damping: 17 }}
             >
-              <Camera className="h-8 w-8 text-primary mr-3" />
-              <span className="text-xl font-bold text-foreground">SnapSuite</span>
+              <Logo variant="full" className="h-16 w-auto object-contain" />
             </motion.div>
-            
+
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
-              <motion.a 
-                href="#features" 
+              <motion.a
+                href="#features"
                 className="text-muted-foreground hover:text-foreground transition-colors font-medium"
                 whileHover={{ scale: 1.05 }}
               >
                 Product
               </motion.a>
-              <motion.a 
-                href="#features" 
+              <motion.a
+                href="#features"
                 className="text-muted-foreground hover:text-foreground transition-colors font-medium"
                 whileHover={{ scale: 1.05 }}
               >
                 Features
               </motion.a>
-              <motion.a 
-                href="#testimonials" 
+              <motion.a
+                href="#testimonials"
                 className="text-muted-foreground hover:text-foreground transition-colors font-medium"
                 whileHover={{ scale: 1.05 }}
               >
@@ -184,8 +184,8 @@ const Index = () => {
 
             {/* Mobile Menu Button */}
             <div className="md:hidden">
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="icon"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
@@ -196,7 +196,7 @@ const Index = () => {
 
           {/* Mobile Navigation */}
           {mobileMenuOpen && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
@@ -224,7 +224,7 @@ const Index = () => {
       <section className="pt-20 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-hero relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-soft opacity-50"></div>
         <div className="container mx-auto relative z-10">
-          <motion.div 
+          <motion.div
             className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
             ref={heroRef.ref}
             initial="initial"
@@ -233,12 +233,12 @@ const Index = () => {
           >
             {/* Hero Text */}
             <motion.div variants={fadeInUp} className="max-w-xl">
-              <motion.h1 
+              <motion.h1
                 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight"
                 variants={fadeInUp}
               >
                 Manage Your Entire{" "}
-                <motion.span 
+                <motion.span
                   className="text-primary"
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -248,13 +248,13 @@ const Index = () => {
                 </motion.span>{" "}
                 From One Place
               </motion.h1>
-              <motion.p 
+              <motion.p
                 className="text-xl text-muted-foreground mb-8 leading-relaxed"
                 variants={fadeInUp}
               >
                 Plan shoots, assign editors, share galleries, and stay on schedule — stress free.
               </motion.p>
-              <motion.div 
+              <motion.div
                 className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full"
                 variants={fadeInUp}
               >
@@ -264,8 +264,8 @@ const Index = () => {
                   className="w-full sm:w-auto"
                 >
                   <Link to="/signup" className="block w-full">
-                    <Button 
-                      size="lg" 
+                    <Button
+                      size="lg"
                       className="w-full sm:w-auto text-sm sm:text-lg px-4 sm:px-8 py-4 sm:py-6 bg-gradient-primary shadow-medium whitespace-nowrap"
                     >
                       <span className="hidden sm:inline">Start Free — No Credit Card</span>
@@ -280,10 +280,10 @@ const Index = () => {
                 >
                   <Button size="lg" variant="outline" className="w-full sm:w-auto text-sm sm:text-lg px-4 sm:px-8 py-4 sm:py-6 shadow-soft">
                     <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
-                      <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                      <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                      <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                      <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                      <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                      <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                     </svg>
                     <span className="hidden sm:inline">Continue with Google</span>
                     <span className="sm:hidden">Google</span>
@@ -293,16 +293,16 @@ const Index = () => {
             </motion.div>
 
             {/* Hero Visual */}
-            <motion.div 
+            <motion.div
               variants={scaleIn}
               className="relative"
             >
               <div className="relative bg-card rounded-2xl shadow-large p-8 border">
-                <motion.div 
-                  animate={{ 
+                <motion.div
+                  animate={{
                     y: [0, -10, 0],
                   }}
-                  transition={{ 
+                  transition={{
                     duration: 4,
                     repeat: Infinity,
                     ease: "easeInOut"
@@ -334,7 +334,7 @@ const Index = () => {
       {/* Feature Section */}
       <section id="features" className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="container mx-auto">
-          <motion.div 
+          <motion.div
             className="text-center mb-16"
             ref={featuresRef.ref}
             initial="initial"
@@ -348,8 +348,8 @@ const Index = () => {
               From first consultation to final delivery, streamline every aspect of your wedding photography business.
             </p>
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
             variants={staggerContainer}
             initial="initial"
@@ -359,14 +359,14 @@ const Index = () => {
               <motion.div
                 key={index}
                 variants={scaleIn}
-                whileHover={{ 
+                whileHover={{
                   y: -8,
                   transition: { duration: 0.3 }
                 }}
               >
                 <Card className="text-center hover:shadow-medium transition-all duration-300 border-0 bg-gradient-soft h-full">
                   <CardHeader className="pb-4">
-                    <motion.div 
+                    <motion.div
                       className="mx-auto w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6"
                       whileHover={{ rotate: 360, scale: 1.1 }}
                       transition={{ duration: 0.6 }}
@@ -390,7 +390,7 @@ const Index = () => {
       {/* How it Works Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
         <div className="container mx-auto">
-          <motion.div 
+          <motion.div
             className="text-center mb-16"
             ref={stepsRef.ref}
             initial="initial"
@@ -404,8 +404,8 @@ const Index = () => {
               Get started in minutes and transform your wedding workflow today
             </p>
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
             variants={staggerContainer}
             initial="initial"
@@ -417,7 +417,7 @@ const Index = () => {
                 variants={scaleIn}
                 className="text-center"
               >
-                <motion.div 
+                <motion.div
                   className="mx-auto w-20 h-20 bg-primary rounded-2xl flex items-center justify-center mb-6 shadow-medium"
                   whileHover={{ scale: 1.05, rotate: 5 }}
                   transition={{ duration: 0.3 }}
@@ -436,7 +436,7 @@ const Index = () => {
       {/* Testimonials Section */}
       <section id="testimonials" className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="container mx-auto">
-          <motion.div 
+          <motion.div
             className="text-center mb-16"
             ref={testimonialsRef.ref}
             initial="initial"
@@ -447,11 +447,11 @@ const Index = () => {
               Loved by Photography Agencies Worldwide
             </h2>
             <p className="text-xl text-muted-foreground">
-              See how SnapSuite has transformed wedding workflows for studios like yours.
+              See how EVENTPIXIO has transformed wedding workflows for studios like yours.
             </p>
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             className="grid grid-cols-1 md:grid-cols-3 gap-8"
             variants={staggerContainer}
             initial="initial"
@@ -465,7 +465,7 @@ const Index = () => {
               >
                 <Card className="hover:shadow-medium transition-all duration-300 border-0 bg-gradient-soft h-full">
                   <CardContent className="pt-8">
-                    <motion.div 
+                    <motion.div
                       className="flex mb-6 justify-center"
                       initial={{ opacity: 0 }}
                       animate={testimonialsRef.isInView ? { opacity: 1 } : { opacity: 0 }}
@@ -493,7 +493,7 @@ const Index = () => {
       {/* Final CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-primary text-primary-foreground relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/90 to-accent/90"></div>
-        <motion.div 
+        <motion.div
           className="container mx-auto text-center relative z-10 max-w-4xl"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -504,7 +504,7 @@ const Index = () => {
             Ready to take control of your wedding projects?
           </h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto opacity-90 leading-relaxed">
-            Join hundreds of wedding photography agencies who have streamlined their workflow with SnapSuite.
+            Join hundreds of wedding photography agencies who have streamlined their workflow with EVENTPIXIO.
           </p>
           <motion.div
             whileHover={{ scale: 1.02 }}
@@ -525,18 +525,17 @@ const Index = () => {
         <div className="container mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
-              <motion.div 
+              <motion.div
                 className="flex items-center mb-6"
                 whileHover={{ scale: 1.02 }}
               >
-                <Camera className="h-8 w-8 text-primary mr-3" />
-                <span className="text-xl font-bold text-foreground">SnapSuite</span>
+                <Logo variant="full" className="h-16 w-auto object-contain" />
               </motion.div>
               <p className="text-muted-foreground mb-6 max-w-md leading-relaxed">
                 Built for Creators Who Capture Forever
               </p>
             </div>
-            
+
             <div>
               <h4 className="font-bold text-foreground mb-4">Company</h4>
               <ul className="space-y-3 text-muted-foreground">
@@ -546,7 +545,7 @@ const Index = () => {
                 <li><a href="#" className="hover:text-primary transition-colors">Contact</a></li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="font-bold text-foreground mb-4">Legal</h4>
               <ul className="space-y-3 text-muted-foreground">
@@ -555,26 +554,26 @@ const Index = () => {
               </ul>
             </div>
           </div>
-          
+
           <Separator className="my-8" />
-          
+
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-muted-foreground text-sm">
-              © 2024 SnapSuite. All rights reserved.
+              © 2024 EVENTPIXIO. All rights reserved.
             </p>
             <div className="flex space-x-4 mt-4 md:mt-0">
-              <motion.a 
-                href="#" 
+              <motion.a
+                href="#"
                 className="text-muted-foreground hover:text-primary transition-colors"
                 whileHover={{ scale: 1.1 }}
               >
                 <span className="sr-only">Instagram</span>
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.174-.105-.949-.199-2.405.042-3.441.219-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.888-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.357-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24.009 12.017 24.009c6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641.001.012.001z"/>
+                  <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.174-.105-.949-.199-2.405.042-3.441.219-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.888-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.357-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24.009 12.017 24.009c6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641.001.012.001z" />
                 </svg>
               </motion.a>
-              <motion.a 
-                href="#" 
+              <motion.a
+                href="#"
                 className="text-muted-foreground hover:text-primary transition-colors"
                 whileHover={{ scale: 1.1 }}
               >

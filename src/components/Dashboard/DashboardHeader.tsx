@@ -7,10 +7,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useNavigate, useLocation } from "react-router-dom";
+import {
+  Bell,
+  Search,
+  Menu,
+  X,
+  User,
+  LogOut,
+  Settings,
+  Grid,
+} from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Logo } from "@/components/ui/Logo";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, type User } from "@/hooks/useAuth";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useLocation } from "react-router-dom";
+
 
 interface DashboardHeaderProps {
   user: User | null;
@@ -137,13 +150,12 @@ export const DashboardHeader = ({ user }: DashboardHeaderProps) => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo and App Name */}
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">S</span>
-            </div>
-            <h1 className="text-xl font-heading font-bold text-foreground">Snap-Suites</h1>
-          </div>
-
+          <Link to="/dashboard" className="flex items-center gap-2">
+            <Logo variant="full" className="h-14 w-auto object-contain" />
+            {/* <span className="font-heading font-bold text-xl tracking-tight text-foreground hidden sm:inline-block">
+            EVENTPIXIO
+          </span> */}
+          </Link>
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             {navigationItems.map((item) => (

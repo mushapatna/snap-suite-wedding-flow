@@ -1,0 +1,23 @@
+=== USERS ===
+User: iqubalmusharaf | Email: iqubalmusharaf@gmail.com
+User: diversenarrative | Email: diversenarrative@gmail.com
+User: photographer1 | Email: photographer1@example.com
+User: photographer2 | Email: photographer2@example.com
+User: videographer1 | Email: videographer1@example.com
+User: videographer2 | Email: videographer2@example.com
+User: droneoperator1 | Email: droneoperator1@example.com
+User: musharafiqubal | Email: musharafiqubal@gmail.com
+User: photoeditor1 | Email: photoeditor1@example.com
+User: videoeditor1 | Email: videoeditor1@example.com
+User: abcd@example.com | Email: abcd@example.com
+
+=== TEAM MEMBERS ===
+Member: Asif | Email: diversenarrative@gmail.com | Role: photographer | Status: sent
+Member: Photographer 1 | Email: photographer1@example.com | Role: Photographer | Status: joined
+Member: Photographer 2 | Email: photographer2@example.com | Role: Photographer | Status: joined
+Member: Videographer 1 | Email: videographer1@example.com | Role: Videographer | Status: joined
+Member: Videographer 2 | Email: videographer2@example.com | Role: Videographer | Status: joined
+Member: Drone Operator 1 | Email: droneoperator1@example.com | Role: Drone Operator | Status: joined
+Member: Photo Editor Sample | Email: photoeditor1@example.com | Role: Photo Editor | Status: joined
+Member: Video Editor Sample | Email: videoeditor1@example.com | Role: Video Editor | Status: joined
+Member: Ayush | Email: abcd@example.com | Role: photographer | Status: joined

@@ -15,7 +15,8 @@ import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { format } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
+import { EventDetailsDialog } from "@/components/EventDetailsDialog";
 
 // Define interfaces matching our API
 interface ProjectDetails {
@@ -82,7 +83,16 @@ export const PhotographerDashboard = () => {
           e.photographer && e.photographer.toLowerCase().includes(myName.toLowerCase())
         );
 
-        setUpcomingShoots(myEvents.sort((a: any, b: any) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()));
+        const today = startOfDay(new Date());
+        const processedEvents = myEvents.map((e: Event) => {
+          const eventDate = startOfDay(new Date(e.event_date));
+          if (e.status === 'upcoming' && isBefore(eventDate, today)) {
+            return { ...e, status: 'completed' };
+          }
+          return e;
+        });
+
+        setUpcomingShoots(processedEvents.sort((a: any, b: any) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()));
       } catch (error) {
         console.error("Failed to fetch dashboard data", error);
       } finally {
@@ -168,17 +178,26 @@ export const PhotographerDashboard = () => {
                 <p className="text-muted-foreground text-center py-4">No upcoming shoots assigned.</p>
               ) : (
                 upcomingShoots.filter(e => e.status === 'upcoming').map((shoot, index) => (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium">{shoot.project_details?.couple_name || shoot.event_name}</h3>
-                      <Badge variant="default">Confirmed</Badge>
-                    </div>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>{format(new Date(shoot.event_date), 'MMMM d, yyyy')} {shoot.time_from ? `at ${shoot.time_from}` : ''}</p>
-                      <p>{shoot.location || shoot.project_details?.location}</p>
-                      <p>{shoot.project_details?.event_type || 'Event'} Session</p>
-                    </div>
-                  </div>
+                  <EventDetailsDialog
+                    key={index}
+                    event={{
+                      ...shoot,
+                      event_name: shoot.project_details?.couple_name ? `${shoot.project_details.couple_name} - ${shoot.event_name}` : shoot.event_name
+                    }}
+                    trigger={
+                      <div className="border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-medium">{shoot.project_details?.couple_name ? `${shoot.project_details.couple_name} - ${shoot.event_name}` : shoot.event_name}</h3>
+                          <Badge variant="default">Confirmed</Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p>{format(new Date(shoot.event_date), 'MMMM d, yyyy')} {shoot.time_from ? `at ${shoot.time_from}` : ''}</p>
+                          <p>{shoot.location || shoot.project_details?.location}</p>
+                          <p>{shoot.project_details?.event_type || 'Event'} Session</p>
+                        </div>
+                      </div>
+                    }
+                  />
                 ))
               )}
             </div>
@@ -201,16 +220,25 @@ export const PhotographerDashboard = () => {
                 <p className="text-muted-foreground text-center py-4">No completed shoots yet.</p>
               ) : (
                 upcomingShoots.filter(e => e.status === 'completed').map((shoot, index) => (
-                  <div key={index} className="border rounded-lg p-4 bg-muted/20">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium text-muted-foreground">{shoot.project_details?.couple_name || shoot.event_name}</h3>
-                      <Badge variant="secondary">Completed</Badge>
-                    </div>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>{format(new Date(shoot.event_date), 'MMMM d, yyyy')}</p>
-                      <p>{shoot.location}</p>
-                    </div>
-                  </div>
+                  <EventDetailsDialog
+                    key={index}
+                    event={{
+                      ...shoot,
+                      event_name: shoot.project_details?.couple_name ? `${shoot.project_details.couple_name} - ${shoot.event_name}` : shoot.event_name
+                    }}
+                    trigger={
+                      <div className="border rounded-lg p-4 bg-muted/20 cursor-pointer hover:bg-muted/40 transition-colors">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-medium text-muted-foreground">{shoot.project_details?.couple_name ? `${shoot.project_details.couple_name} - ${shoot.event_name}` : shoot.event_name}</h3>
+                          <Badge variant="secondary">Completed</Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p>{format(new Date(shoot.event_date), 'MMMM d, yyyy')}</p>
+                          <p>{shoot.location || shoot.project_details?.location}</p>
+                        </div>
+                      </div>
+                    }
+                  />
                 ))
               )}
             </div>
@@ -235,7 +263,7 @@ export const PhotographerDashboard = () => {
                 upcomingShoots.filter(e => e.status === 'submitted').map((shoot, index) => (
                   <div key={index} className="border rounded-lg p-4 bg-muted/20">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium text-muted-foreground">{shoot.project_details?.couple_name || shoot.event_name}</h3>
+                      <h3 className="font-medium text-muted-foreground">{shoot.project_details?.couple_name ? `${shoot.project_details.couple_name} - ${shoot.event_name}` : shoot.event_name}</h3>
                       <Badge variant="outline" className="text-green-600 border-green-600">Submitted</Badge>
                     </div>
                     <div className="text-sm text-muted-foreground space-y-1">

@@ -93,7 +93,7 @@ export const useSignupForm = () => {
       } else {
         toast({
           title: "Account Created Successfully!",
-          description: "Welcome to SnapSuite. You can now log in.",
+          description: "Welcome to EVENTPIXIO. You can now log in.",
         });
         navigate('/login');
       }

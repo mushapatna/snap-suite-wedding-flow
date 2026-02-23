@@ -1,4 +1,5 @@
-# Snap Suite a Wedding Photography and Videography Agency Management Tool
+# EVENTPIXIO
+A Wedding Photography and Videography Agency Management Tool
 
 A comprehensive Wedding Project Management System designed to streamline the workflow for photographers, videographers, and editors.
 

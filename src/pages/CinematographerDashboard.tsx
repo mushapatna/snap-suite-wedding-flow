@@ -15,7 +15,8 @@ import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { format } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
+import { EventDetailsDialog } from "@/components/EventDetailsDialog";
 
 // Define interfaces matching our API
 interface ProjectDetails {
@@ -96,7 +97,16 @@ export const CinematographerDashboard = () => {
           e.cinematographer && e.cinematographer.toLowerCase().includes(myName.toLowerCase())
         );
 
-        setVideoProjects(myEvents.sort((a: any, b: any) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()));
+        const today = startOfDay(new Date());
+        const processedEvents = myEvents.map((e: Event) => {
+          const eventDate = startOfDay(new Date(e.event_date));
+          if (e.status === 'upcoming' && isBefore(eventDate, today)) {
+            return { ...e, status: 'completed' };
+          }
+          return e;
+        });
+
+        setVideoProjects(processedEvents.sort((a: any, b: any) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()));
       } catch (error) {
         console.error("Failed to fetch dashboard data", error);
       } finally {
@@ -182,27 +192,36 @@ export const CinematographerDashboard = () => {
                 <p className="text-muted-foreground text-center py-4">No assignments found.</p>
               ) : (
                 videoProjects.map((project, index) => (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium text-sm">{project.project_details?.couple_name || project.event_name}</h3>
-                      <Badge
-                        variant={
-                          project.status === 'upcoming' ? 'secondary' :
-                            project.status === 'completed' ? 'default' : 'outline'
-                        }
-                      >
-                        {project.status === 'upcoming' ? 'Confirmed' : project.status}
-                      </Badge>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>{format(new Date(project.event_date), 'MMMM d, yyyy')}</span>
-                        <span>{project.project_details?.event_type}</span>
+                  <EventDetailsDialog
+                    key={index}
+                    event={{
+                      ...project,
+                      event_name: project.project_details?.couple_name ? `${project.project_details.couple_name} - ${project.event_name}` : project.event_name
+                    }}
+                    trigger={
+                      <div className="border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-medium text-sm">{project.project_details?.couple_name ? `${project.project_details.couple_name} - ${project.event_name}` : project.event_name}</h3>
+                          <Badge
+                            variant={
+                              project.status === 'upcoming' ? 'secondary' :
+                                project.status === 'completed' ? 'default' : 'outline'
+                            }
+                          >
+                            {project.status === 'upcoming' ? 'Confirmed' : project.status}
+                          </Badge>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>{format(new Date(project.event_date), 'MMMM d, yyyy')}</span>
+                            <span>{project.project_details?.event_type}</span>
+                          </div>
+                          {/* Mock progress as we don't have this data yet */}
+                          <Progress value={project.status === 'completed' ? 100 : 0} className="h-2" />
+                        </div>
                       </div>
-                      {/* Mock progress as we don't have this data yet */}
-                      <Progress value={project.status === 'completed' ? 100 : 0} className="h-2" />
-                    </div>
-                  </div>
+                    }
+                  />
                 ))
               )}
             </div>

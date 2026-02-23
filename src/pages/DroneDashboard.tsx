@@ -17,7 +17,8 @@ import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { format } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
+import { EventDetailsDialog } from "@/components/EventDetailsDialog";
 
 // Define interfaces matching our API
 interface ProjectDetails {
@@ -105,7 +106,16 @@ export const DroneDashboard = () => {
           e.drone_operator && e.drone_operator.toLowerCase().includes(myName.toLowerCase())
         );
 
-        setUpcomingFlights(myEvents.sort((a: any, b: any) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()));
+        const today = startOfDay(new Date());
+        const processedEvents = myEvents.map((e: Event) => {
+          const eventDate = startOfDay(new Date(e.event_date));
+          if (e.status === 'upcoming' && isBefore(eventDate, today)) {
+            return { ...e, status: 'completed' };
+          }
+          return e;
+        });
+
+        setUpcomingFlights(processedEvents.sort((a: any, b: any) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()));
       } catch (error) {
         console.error("Failed to fetch dashboard data", error);
       } finally {
@@ -232,22 +242,31 @@ export const DroneDashboard = () => {
                   <p className="text-muted-foreground text-center py-4">No upcoming flights assigned.</p>
                 ) : (
                   upcomingFlights.map((flight, index) => (
-                    <div key={index} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium">{flight.project_details?.couple_name || flight.event_name}</h3>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={flight.status === 'upcoming' ? 'default' : 'secondary'}
-                          >
-                            {flight.status === 'upcoming' ? 'Approved' : flight.status}
-                          </Badge>
+                    <EventDetailsDialog
+                      key={index}
+                      event={{
+                        ...flight,
+                        event_name: flight.project_details?.couple_name ? `${flight.project_details.couple_name} - ${flight.event_name}` : flight.event_name
+                      }}
+                      trigger={
+                        <div className="border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-medium">{flight.project_details?.couple_name ? `${flight.project_details.couple_name} - ${flight.event_name}` : flight.event_name}</h3>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant={flight.status === 'upcoming' ? 'default' : 'secondary'}
+                              >
+                                {flight.status === 'upcoming' ? 'Approved' : flight.status}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            <p>{format(new Date(flight.event_date), 'MMMM d, yyyy')} • {flight.time_from || 'TBD'}</p>
+                            <p>{flight.location || flight.project_details?.location}</p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-sm text-muted-foreground space-y-1">
-                        <p>{format(new Date(flight.event_date), 'MMMM d, yyyy')} • {flight.time_from || 'TBD'}</p>
-                        <p>{flight.location || flight.project_details?.location}</p>
-                      </div>
-                    </div>
+                      }
+                    />
                   ))
                 )}
               </div>

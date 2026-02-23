@@ -87,6 +87,7 @@ class Event(models.Model):
     project = models.ForeignKey(WeddingProject, on_delete=models.CASCADE, related_name='events')
     event_name = models.TextField()
     event_date = models.DateField()
+    end_date = models.DateField(blank=True, null=True)
     
     EVENT_STATUS_CHOICES = [
         ('upcoming', 'Upcoming'),

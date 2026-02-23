@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,39 @@ import { useNavigate } from "react-router-dom";
 import { EventDetailsDialog } from "@/components/EventDetailsDialog";
 import { TaskDetailsDialog } from "@/components/TaskDetailsDialog";
 
+// Define a palette of distinct colors for projects
+// Format: { bg: background, text: text color, border: border color, dot: dot color (for events) }
+const PROJECT_COLORS = [
+  { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-200", border: "border-blue-200 dark:border-blue-800", dot: "bg-blue-500" },
+  { bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-700 dark:text-emerald-200", border: "border-emerald-200 dark:border-emerald-800", dot: "bg-emerald-500" },
+  { bg: "bg-purple-100 dark:bg-purple-900/30", text: "text-purple-700 dark:text-purple-200", border: "border-purple-200 dark:border-purple-800", dot: "bg-purple-500" },
+  { bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-700 dark:text-amber-200", border: "border-amber-200 dark:border-amber-800", dot: "bg-amber-500" },
+  { bg: "bg-rose-100 dark:bg-rose-900/30", text: "text-rose-700 dark:text-rose-200", border: "border-rose-200 dark:border-rose-800", dot: "bg-rose-500" },
+  { bg: "bg-cyan-100 dark:bg-cyan-900/30", text: "text-cyan-700 dark:text-cyan-200", border: "border-cyan-200 dark:border-cyan-800", dot: "bg-cyan-500" },
+  { bg: "bg-indigo-100 dark:bg-indigo-900/30", text: "text-indigo-700 dark:text-indigo-200", border: "border-indigo-200 dark:border-indigo-800", dot: "bg-indigo-500" },
+  { bg: "bg-lime-100 dark:bg-lime-900/30", text: "text-lime-700 dark:text-lime-200", border: "border-lime-200 dark:border-lime-800", dot: "bg-lime-500" },
+  { bg: "bg-fuchsia-100 dark:bg-fuchsia-900/30", text: "text-fuchsia-700 dark:text-fuchsia-200", border: "border-fuchsia-200 dark:border-fuchsia-800", dot: "bg-fuchsia-500" },
+];
+
+const getProjectColor = (projectId?: string) => {
+  if (!projectId) return PROJECT_COLORS[0]; // Default fallback
+
+  // Simple hash function to get consistent index from UUID
+  let hash = 0;
+  for (let i = 0; i < projectId.length; i++) {
+    hash = projectId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  const index = Math.abs(hash) % PROJECT_COLORS.length;
+  return PROJECT_COLORS[index];
+};
+
+interface ProjectDetails {
+  id: string;
+  couple_name: string;
+  event_type: string;
+}
+
 interface Event {
   id: string;
   event_name: string;
@@ -31,6 +64,7 @@ interface Event {
   time_from: string;
   time_to: string;
   event_type?: string;
+  project_details?: ProjectDetails;
   [key: string]: any;
 }
 
@@ -40,6 +74,7 @@ interface Task {
   due_date: string; // This is the key for calendar
   priority: string;
   status: string;
+  project_details?: ProjectDetails;
   [key: string]: any;
 }
 
@@ -219,50 +254,54 @@ export default function Calendar() {
                   {/* Events & Tasks Container */}
                   <div className="space-y-1 overflow-y-auto max-h-[100px] scrollbar-thin scrollbar-thumb-muted">
                     {/* Events */}
-                    {dayEvents.map(event => (
-                      <EventDetailsDialog
-                        key={event.id}
-                        event={event as any}
-                        onUpdate={fetchMonthData}
-                        trigger={
-                          <div
-                            className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200 rounded-md border border-blue-200 dark:border-blue-800 truncate cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1"
-                            title={`${event.event_name} (${event.time_from} - ${event.time_to})`}
-                          >
-                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
-                            {event.time_from && <span className="opacity-75 text-[10px]">{event.time_from?.slice(0, 5)}</span>}
-                            <span>{event.event_name}</span>
-                          </div>
-                        }
-                      />
-                    ))}
+                    {dayEvents.map(event => {
+                      const color = getProjectColor(event.project_details?.id);
+                      return (
+                        <EventDetailsDialog
+                          key={event.id}
+                          event={event as any}
+                          onUpdate={fetchMonthData}
+                          trigger={
+                            <div
+                              className={`px-2 py-1 text-xs font-medium rounded-md border truncate cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1 ${color.bg} ${color.text} ${color.border}`}
+                              title={`${event.event_name} (${event.time_from} - ${event.time_to})`}
+                            >
+                              <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${color.dot}`} />
+                              {event.time_from && <span className="opacity-75 text-[10px]">{event.time_from?.slice(0, 5)}</span>}
+                              <span>{event.event_name}</span>
+                            </div>
+                          }
+                        />
+                      );
+                    })}
 
                     {/* Tasks */}
-                    {dayTasks.map(task => (
-                      <TaskDetailsDialog
-                        key={task.id}
-                        task={task as any}
-                        onTaskUpdated={fetchMonthData}
-                        trigger={
-                          <div
-                            className={`
-                              px-2 py-1 text-xs font-medium rounded-md border truncate cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1
-                              ${task.status === 'completed'
-                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-200 border-green-200 dark:border-green-800 decoration-slate-500'
-                                : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-200 border-orange-200 dark:border-orange-800'
+                    {dayTasks.map(task => {
+                      const color = getProjectColor(task.project_details?.id);
+                      return (
+                        <TaskDetailsDialog
+                          key={task.id}
+                          task={task as any}
+                          onTaskUpdated={fetchMonthData}
+                          trigger={
+                            <div
+                              className={`
+                                px-2 py-1 text-xs font-medium rounded-md border truncate cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1
+                                ${task.status === 'completed' ? 'decoration-slate-500 opacity-75' : ''}
+                                ${color.bg} ${color.text} ${color.border}
+                              `}
+                              title={`Task: ${task.title}`}
+                            >
+                              {task.status === 'completed'
+                                ? <CheckCircle2 className="w-3 h-3 shrink-0" />
+                                : <Clock className="w-3 h-3 shrink-0" />
                               }
-                            `}
-                            title={`Task: ${task.title}`}
-                          >
-                            {task.status === 'completed'
-                              ? <CheckCircle2 className="w-3 h-3 shrink-0" />
-                              : <Clock className="w-3 h-3 shrink-0" />
-                            }
-                            <span className={task.status === 'completed' ? 'line-through opacity-75' : ''}>{task.title}</span>
-                          </div>
-                        }
-                      />
-                    ))}
+                              <span className={task.status === 'completed' ? 'line-through' : ''}>{task.title}</span>
+                            </div>
+                          }
+                        />
+                      );
+                    })}
                   </div>
                 </div>
               );

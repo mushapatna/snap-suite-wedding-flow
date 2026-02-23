@@ -3,10 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Heart, 
-  Download, 
-  MessageCircle, 
+import {
+  Heart,
+  Download,
+  MessageCircle,
   Calendar,
   Image,
   Video,
@@ -28,7 +28,7 @@ const projectProgress = [
   },
   {
     milestone: "Pre-wedding Consultation",
-    status: "completed", 
+    status: "completed",
     date: "March 5, 2024",
     progress: 100,
     deliverables: "Shot list & timeline"
@@ -85,7 +85,7 @@ const teamMembers = [
   },
   {
     name: "Mike Chen",
-    role: "Cinematographer", 
+    role: "Cinematographer",
     avatar: "MC",
     status: "available"
   },
@@ -111,9 +111,9 @@ const recentMessages = [
     unread: false
   },
   {
-    from: "Studio Team",
-    message: "Welcome to Snap-Suites! We're excited for your big day.",
-    time: "3 days ago",
+    title: "Welcome!",
+    message: "Welcome to EVENTPIXIO! We're excited for your big day.",
+    action: "Let's Get Started",
     unread: false
   }
 ];
@@ -145,7 +145,7 @@ export const ClientPortal = () => {
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader user={user} />
-      
+
       <div className="container mx-auto p-6 space-y-8">
         {/* Welcome Section */}
         <motion.div
@@ -223,10 +223,10 @@ export const ClientPortal = () => {
                     <div className="flex items-center gap-1">
                       {milestone.status === 'completed' && <CheckCircle className="w-4 h-4 text-success" />}
                       {milestone.status === 'in-progress' && <Clock className="w-4 h-4 text-warning" />}
-                      <Badge 
+                      <Badge
                         variant={
                           milestone.status === 'completed' ? 'default' :
-                          milestone.status === 'in-progress' ? 'secondary' : 'outline'
+                            milestone.status === 'in-progress' ? 'secondary' : 'outline'
                         }
                       >
                         {milestone.status}
@@ -288,7 +288,7 @@ export const ClientPortal = () => {
                     <h3 className="font-medium">{gallery.title}</h3>
                     <div className="flex items-center gap-2">
                       {gallery.approved && <CheckCircle className="w-4 h-4 text-success" />}
-                      <Badge 
+                      <Badge
                         variant={gallery.status === 'ready' ? 'default' : 'secondary'}
                       >
                         {gallery.status}
@@ -337,7 +337,7 @@ export const ClientPortal = () => {
                       <p className="text-xs text-muted-foreground">{member.role}</p>
                     </div>
                   </div>
-                  <Badge 
+                  <Badge
                     variant={member.status === 'available' ? 'default' : 'secondary'}
                     className="text-xs"
                   >

@@ -13,9 +13,7 @@ import {
   Users,
   Plus,
   MoreVertical,
-  Send,
   Trash2,
-  RefreshCw,
   Mail,
   Phone,
   MessageCircle
@@ -86,29 +84,7 @@ const Team = () => {
     fetchTeamMembers();
   };
 
-  const handleResendInvitation = async (member: TeamMember) => {
-    setProcessingActions(prev => ({ ...prev, [member.id]: true }));
 
-    try {
-      await api.post(`/contacts/${member.id}/resend_invitation/`, {}, token);
-
-      toast({
-        title: "Invitation Resent",
-        description: `Invitation resent to ${member.name}`,
-      });
-
-      fetchTeamMembers();
-    } catch (error: any) {
-      console.error("Error resending invitation:", error);
-      toast({
-        title: "Failed to resend invitation",
-        description: error.message || "Please try again later",
-        variant: "destructive",
-      });
-    } finally {
-      setProcessingActions(prev => ({ ...prev, [member.id]: false }));
-    }
-  };
 
   const handleDeleteMember = async () => {
     if (!memberToDelete) return;
@@ -277,26 +253,7 @@ const Team = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-48">
-                                {(member.status === 'pending' || member.status === 'failed') && (
-                                  <DropdownMenuItem
-                                    onClick={() => handleResendInvitation(member)}
-                                    disabled={processingActions[member.id]}
-                                    className="gap-2"
-                                  >
-                                    <RefreshCw className="h-4 w-4" />
-                                    {member.status === 'pending' ? 'Send Invitation' : 'Resend Invitation'}
-                                  </DropdownMenuItem>
-                                )}
-                                {member.status === 'sent' && (
-                                  <DropdownMenuItem
-                                    onClick={() => handleResendInvitation(member)}
-                                    disabled={processingActions[member.id]}
-                                    className="gap-2"
-                                  >
-                                    <Send className="h-4 w-4" />
-                                    Resend Invitation
-                                  </DropdownMenuItem>
-                                )}
+
                                 <DropdownMenuItem
                                   onClick={() => {
                                     setMemberToDelete(member);

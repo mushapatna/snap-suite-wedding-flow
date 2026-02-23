@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { format } from "date-fns";
+import { format, isSameDay, parse, areIntervalsOverlapping } from "date-fns";
 import {
   Calendar,
   MapPin,
@@ -24,7 +24,10 @@ import {
   MessageSquare,
   Send,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Search,
+  User,
+  Link
 } from "lucide-react";
 import {
   Dialog,
@@ -44,6 +47,19 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MentionInput } from "@/components/ui/mention-input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -53,6 +69,7 @@ interface EventDetailsDialogProps {
     id: string;
     event_name: string;
     event_date: string;
+    end_date?: string;
     time_from?: string;
     time_to?: string;
     location?: string;
@@ -102,10 +119,26 @@ interface FileSubmission {
 
 export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDialogProps) {
   const [open, setOpen] = useState(false);
+
+  // Local state to handle immediate updates before parent refresh
+  const [currentEvent, setCurrentEvent] = useState(event);
+  const lastSaveTime = useRef<number>(0);
+
+  useEffect(() => {
+    // If an update came from the parent within 2 seconds of our local save, 
+    // it's likely the stale prop from the parent re-render before the fetch completed.
+    // We ignore it to prevent reverting the UI.
+    if (Date.now() - lastSaveTime.current < 2000) {
+      return;
+    }
+    setCurrentEvent(event);
+  }, [event]);
+
   const [teamContacts, setTeamContacts] = useState<TeamContact[]>([]);
   const [checklists, setChecklists] = useState<ChecklistItem[]>([]);
   const [fileSubmissions, setFileSubmissions] = useState<FileSubmission[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
+  const [dailyEvents, setDailyEvents] = useState<any[]>([]); // To check for conflicts
   const [loading, setLoading] = useState(false);
   const [newChecklistItem, setNewChecklistItem] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("equipment");
@@ -116,51 +149,93 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
   const [newComments, setNewComments] = useState<Record<string, string>>({});
   const [showTaskForm, setShowTaskForm] = useState<Record<string, boolean>>({});
   const [newTask, setNewTask] = useState<Record<string, { title: string; description: string; priority: string; due_date: string }>>({});
+  const [driveLinkInputs, setDriveLinkInputs] = useState<Record<string, string>>({});
+  const [isSubmittingLink, setIsSubmittingLink] = useState<Record<string, boolean>>({});
 
   // Edit Mode State
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState(event);
+  const [editForm, setEditForm] = useState(currentEvent);
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
-    setEditForm(event);
-  }, [event]);
+    setEditForm(currentEvent);
+  }, [currentEvent]);
 
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  const eventDate = new Date(event.event_date);
+  const eventDate = new Date(currentEvent.event_date);
   const isUpcoming = eventDate > new Date();
 
   // Parse team members from the event
   const getTeamMembers = () => {
     const members: { name: string; role: string }[] = [];
 
-    if (event.photographer) {
-      event.photographer.split(", ").forEach(name => {
-        members.push({ name: name.trim(), role: "photographer" });
+    if (currentEvent.photographer) {
+      currentEvent.photographer.split(", ").forEach(name => {
+        if (name.trim()) members.push({ name: name.trim(), role: "photographer" });
       });
     }
-    if (event.cinematographer) {
-      event.cinematographer.split(", ").forEach(name => {
-        members.push({ name: name.trim(), role: "cinematographer" });
+    if (currentEvent.cinematographer) {
+      currentEvent.cinematographer.split(", ").forEach(name => {
+        if (name.trim()) members.push({ name: name.trim(), role: "cinematographer" });
       });
     }
-    if (event.drone_operator) {
-      event.drone_operator.split(", ").forEach(name => {
-        members.push({ name: name.trim(), role: "drone_operator" });
+    if (currentEvent.drone_operator) {
+      currentEvent.drone_operator.split(", ").forEach(name => {
+        if (name.trim()) members.push({ name: name.trim(), role: "drone_operator" });
       });
     }
-    if (event.site_manager) {
-      members.push({ name: event.site_manager, role: "site_manager" });
+    if (currentEvent.site_manager) {
+      currentEvent.site_manager.split(", ").forEach(name => {
+        if (name.trim()) members.push({ name: name.trim(), role: "site_manager" });
+      });
     }
-    if (event.assistant) {
-      members.push({ name: event.assistant, role: "assistant" });
+    if (currentEvent.assistant) {
+      currentEvent.assistant.split(", ").forEach(name => {
+        if (name.trim()) members.push({ name: name.trim(), role: "assistant" });
+      });
     }
 
     return members;
   };
 
-  const { token } = useAuth();
+  const { user, token, hasRole, isStudioOwner, isTeamMember, profile } = useAuth();
+
+  const handleAttachDriveLink = async (member: any) => {
+    const link = driveLinkInputs[member.name];
+    if (!link?.trim() || !token) return;
+
+    setIsSubmittingLink(prev => ({ ...prev, [member.name]: true }));
+    try {
+      await api.post('/submissions/', {
+        event: currentEvent.id,
+        team_member_name: member.name,
+        team_member_role: member.role,
+        file_name: "Drive Link",
+        file_url: link,
+        file_type: "link",
+        submission_type: "drive_link",
+        review_status: "pending"
+      }, token);
+
+      toast({
+        title: "Success",
+        description: "Drive link attached successfully.",
+      });
+
+      setDriveLinkInputs(prev => ({ ...prev, [member.name]: "" }));
+      fetchEventData();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to attach drive link.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingLink(prev => ({ ...prev, [member.name]: false }));
+    }
+  };
 
   const fetchEventData = async () => {
     if (!token) return;
@@ -171,21 +246,23 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
       setTeamContacts(contactsData || []);
 
       // Fetch checklists for this event
-      const checklistsData = await api.get(`/event-checklists/?event_id=${event.id}`, token);
+      const checklistsData = await api.get(`/event-checklists/?event_id=${currentEvent.id}`, token);
       setChecklists(checklistsData?.sort((a: any, b: any) => a.category.localeCompare(b.category)) || []);
 
       // Fetch file submissions for this event
-      const submissionsData = await api.get(`/submissions/?event_id=${event.id}`, token);
+      const submissionsData = await api.get(`/submissions/?event_id=${currentEvent.id}`, token);
       setFileSubmissions(submissionsData?.sort((a: any, b: any) => new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime()) || []);
 
-      // Fetch tasks from the project that contains this event
-      // First get event details to know project_id
-      // Current 'event' prop might not have project_id if it comes from a list view that didn't include it. 
-      // But let's check if we can fetch the event details from API to be sure.
-      const eventDetails = await api.get(`/events/${event.id}/`, token);
+      // Fetch ALL events for the same day to check availability
+      const formattedDate = format(new Date(currentEvent.event_date), 'yyyy-MM-dd');
+      const dailyEventsData = await api.get(`/events/?start_date=${formattedDate}&end_date=${formattedDate}`, token);
+      // Ensure we get an array, API might return pagination object
+      const dailyEventsList = Array.isArray(dailyEventsData) ? dailyEventsData : (dailyEventsData.results || []);
+      setDailyEvents(dailyEventsList);
 
+      // Fetch tasks from the project that contains this event
+      const eventDetails = await api.get(`/events/${currentEvent.id}/`, token);
       if (eventDetails && eventDetails.project) {
-        // eventDetails.project is likely an ID string based on my serializer
         const tasksData = await api.get(`/tasks/?project_id=${eventDetails.project}`, token);
         setTasks(tasksData?.sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()) || []);
       }
@@ -206,7 +283,46 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
     if (open && token) {
       fetchEventData();
     }
-  }, [open, event.id, token]);
+  }, [open, currentEvent.id, token]);
+
+
+  // --- Availability Logic ---
+  const checkAvailability = (memberName: string) => {
+    // 1. Find overlapping events
+    const currentEventStart = editForm.time_from ? parse(editForm.time_from, 'HH:mm:ss', new Date()) : null;
+    const currentEventEnd = editForm.time_to ? parse(editForm.time_to, 'HH:mm:ss', new Date()) : null;
+
+    if (!currentEventStart || !currentEventEnd) return { isAvailable: true };
+
+    const conflictingEvents = dailyEvents.filter(otherEvent => {
+      if (otherEvent.id === currentEvent.id) return false; // Ignore self
+
+      const otherStart = otherEvent.time_from ? parse(otherEvent.time_from, 'HH:mm:ss', new Date()) : null;
+      const otherEnd = otherEvent.time_to ? parse(otherEvent.time_to, 'HH:mm:ss', new Date()) : null;
+
+      if (!otherStart || !otherEnd) return false;
+
+      return areIntervalsOverlapping(
+        { start: currentEventStart, end: currentEventEnd },
+        { start: otherStart, end: otherEnd }
+      );
+    });
+
+    // 2. Check if member is assigned to any conflicting event
+    const busyWith = conflictingEvents.find(otherEvent => {
+      const roles = ['photographer', 'cinematographer', 'drone_operator', 'site_manager', 'assistant'];
+      return roles.some(role => {
+        const assigned = otherEvent[role];
+        return assigned && assigned.includes(memberName);
+      });
+    });
+
+    if (busyWith) {
+      return { isAvailable: false, busyWith: busyWith.event_name };
+    }
+    return { isAvailable: true };
+  };
+
 
   const toggleChecklistItem = async (itemId: string, isCompleted: boolean) => {
     if (!token) return;
@@ -241,7 +357,7 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
 
     try {
       const data = await api.post("/event-checklists/", {
-        event: event.id, // DRF expects 'event' as ID
+        event: currentEvent.id, // DRF expects 'event' as ID
         item_name: newChecklistItem,
         category: selectedCategory,
         assigned_role: selectedRole || null,
@@ -267,6 +383,7 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
       });
     }
   };
+
 
   const getContactInfo = (memberName: string) => {
     return teamContacts.find(contact =>
@@ -350,7 +467,7 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
 
     try {
       // Get project ID first
-      const eventDetails = await api.get(`/events/${event.id}/`, token);
+      const eventDetails = await api.get(`/events/${currentEvent.id}/`, token);
 
       if (!eventDetails || !eventDetails.project) throw new Error("Project not found");
 
@@ -412,27 +529,121 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
   const teamMembers = getTeamMembers();
   const progressPercentage = getProgressPercentage();
 
+  // --- Team Member Selector Component ---
+  const TeamMemberSelect = ({
+    role,
+    value,
+    onChange
+  }: {
+    role: string;
+    value: string;
+    onChange: (val: string) => void;
+  }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    // Filter contacts by role preference (optional, showing all for flexibility)
+    // But logically we might want to prioritize those with matching roles. 
+    // For now, show all.
+
+    const selectedMembers = value ? value.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+    const handleSelect = (memberName: string) => {
+      const newSelection = selectedMembers.includes(memberName)
+        ? selectedMembers.filter(m => m !== memberName)
+        : [...selectedMembers, memberName];
+
+      onChange(newSelection.join(', '));
+    };
+
+    return (
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={isOpen}
+            className="w-full justify-between"
+          >
+            {selectedMembers.length > 0
+              ? `${selectedMembers.length} selected`
+              : "Select team members..."}
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[300px] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Search team..." />
+            <CommandList>
+              <CommandEmpty>No team member found.</CommandEmpty>
+              <CommandGroup>
+                {teamContacts.map((member) => {
+                  const { isAvailable, busyWith } = checkAvailability(member.name);
+                  const isSelected = selectedMembers.includes(member.name);
+
+                  return (
+                    <CommandItem
+                      key={member.id}
+                      value={member.name}
+                      onSelect={() => handleSelect(member.name)}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`h-2 w-2 rounded-full ${isAvailable ? 'bg-green-500' : 'bg-red-500'}`}
+                          title={isAvailable ? "Available" : `Busy with: ${busyWith}`}
+                        />
+                        <div className="flex flex-col">
+                          <span>{member.name}</span>
+                          {!isAvailable && (
+                            <span className="text-[10px] text-muted-foreground text-red-500">
+                              Busy: {busyWith}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {isSelected && <Check className="h-4 w-4 opacity-100" />}
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    );
+  };
+
+
   const handleSaveEvent = async () => {
     if (!token) return;
     try {
       const payload = {
         event_name: editForm.event_name,
         event_date: editForm.event_date,
+        end_date: editForm.end_date,
         time_from: editForm.time_from,
         time_to: editForm.time_to,
         location: editForm.location,
         google_map_link: editForm.google_map_link,
         details: editForm.details,
         instructions: editForm.instructions,
+        photographer: editForm.photographer,
+        cinematographer: editForm.cinematographer,
+        drone_operator: editForm.drone_operator,
+        site_manager: editForm.site_manager,
+        assistant: editForm.assistant,
       };
 
-      await api.patch(`/events/${event.id}/`, payload, token);
+      await api.patch(`/events/${currentEvent.id}/`, payload, token);
 
       toast({
         title: "Success",
         description: "Event details updated successfully",
       });
 
+      // Update local state immediately
+      lastSaveTime.current = Date.now();
+      setCurrentEvent({ ...currentEvent, ...payload });
       setIsEditing(false);
       if (onUpdate) onUpdate();
 
@@ -455,20 +666,23 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            {event.event_name}
+            {currentEvent.event_name}
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="overview" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               {!isMobile && "Overview"}
             </TabsTrigger>
-            <TabsTrigger value="team" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              {!isMobile && "Team & Tasks"}
-            </TabsTrigger>
+            {isStudioOwner() && (
+              <TabsTrigger value="team" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                {!isMobile && "Team & Tasks"}
+              </TabsTrigger>
+            )}
             <TabsTrigger value="submissions" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               {!isMobile && "File Submissions"}
@@ -480,20 +694,22 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle>Event Information</CardTitle>
-                {!isEditing ? (
-                  <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
-                    <FileText className="h-4 w-4 mr-2" />
-                    Edit Details
-                  </Button>
-                ) : (
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
-                      Cancel
+                {isStudioOwner() && (
+                  !isEditing ? (
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Edit Details
                     </Button>
-                    <Button size="sm" onClick={handleSaveEvent}>
-                      Save Changes
-                    </Button>
-                  </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+                        Cancel
+                      </Button>
+                      <Button size="sm" onClick={handleSaveEvent}>
+                        Save Changes
+                      </Button>
+                    </div>
+                  )
                 )}
               </CardHeader>
               <CardContent className="space-y-4 pt-4">
@@ -508,7 +724,7 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Date</label>
+                        <label className="text-sm font-medium">Start Date</label>
                         <Input
                           type="date"
                           value={editForm.event_date}
@@ -516,15 +732,24 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Time From</label>
+                        <label className="text-sm font-medium">Start Time</label>
                         <Input
                           type="time"
                           value={editForm.time_from || ''}
                           onChange={(e) => setEditForm({ ...editForm, time_from: e.target.value })}
                         />
                       </div>
+
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Time To</label>
+                        <label className="text-sm font-medium">End Date</label>
+                        <Input
+                          type="date"
+                          value={editForm.end_date || ''}
+                          onChange={(e) => setEditForm({ ...editForm, end_date: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">End Time</label>
                         <Input
                           type="time"
                           value={editForm.time_to || ''}
@@ -536,6 +761,54 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
                         <Input
                           value={editForm.location || ''}
                           onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                        />
+                      </div>
+                      {/* Team Assignment Section - Now with Availability Check */}
+                      <Separator className="md:col-span-2 my-2" />
+                      <h4 className="md:col-span-2 font-medium text-muted-foreground">Team Assignment</h4>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Photographer(s)</label>
+                        <TeamMemberSelect
+                          role="photographer"
+                          value={editForm.photographer || ''}
+                          onChange={(val) => setEditForm({ ...editForm, photographer: val })}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Cinematographer(s)</label>
+                        <TeamMemberSelect
+                          role="cinematographer"
+                          value={editForm.cinematographer || ''}
+                          onChange={(val) => setEditForm({ ...editForm, cinematographer: val })}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Drone Operator(s)</label>
+                        <TeamMemberSelect
+                          role="drone_operator"
+                          value={editForm.drone_operator || ''}
+                          onChange={(val) => setEditForm({ ...editForm, drone_operator: val })}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Site Manager</label>
+                        <TeamMemberSelect
+                          role="site_manager"
+                          value={editForm.site_manager || ''}
+                          onChange={(val) => setEditForm({ ...editForm, site_manager: val })}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Assistant</label>
+                        <TeamMemberSelect
+                          role="assistant"
+                          value={editForm.assistant || ''}
+                          onChange={(val) => setEditForm({ ...editForm, assistant: val })}
                         />
                       </div>
                       <div className="space-y-2 md:col-span-2">
@@ -576,27 +849,27 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
                           </Badge>
                         </div>
 
-                        {(event.time_from || event.time_to) && (
+                        {(currentEvent.time_from || currentEvent.time_to) && (
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4 text-muted-foreground" />
                             <span className="font-medium">Time:</span>
                             <span>
-                              {event.time_from && event.time_to
-                                ? `${event.time_from} - ${event.time_to}`
-                                : event.time_from || event.time_to
+                              {currentEvent.time_from && currentEvent.time_to
+                                ? `${currentEvent.time_from} - ${currentEvent.time_to}`
+                                : currentEvent.time_from || currentEvent.time_to
                               }
                             </span>
                           </div>
                         )}
 
-                        {event.location && (
+                        {currentEvent.location && (
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-muted-foreground" />
                             <span className="font-medium">Location:</span>
-                            <span>{event.location}</span>
-                            {event.google_map_link && (
+                            <span>{currentEvent.location}</span>
+                            {currentEvent.google_map_link && (
                               <Button variant="ghost" size="sm" asChild>
-                                <a href={event.google_map_link} target="_blank" rel="noopener noreferrer">
+                                <a href={currentEvent.google_map_link} target="_blank" rel="noopener noreferrer">
                                   <ExternalLink className="h-3 w-3" />
                                 </a>
                               </Button>
@@ -620,18 +893,18 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
                       </div>
                     </div>
 
-                    {event.details && (
+                    {currentEvent.details && (
                       <div className="space-y-2">
                         <span className="font-medium">Description:</span>
-                        <p className="text-muted-foreground">{event.details}</p>
+                        <p className="text-muted-foreground">{currentEvent.details}</p>
                       </div>
                     )}
 
-                    {event.instructions && (
+                    {currentEvent.instructions && (
                       <div className="space-y-2">
                         <span className="font-medium">Special Instructions:</span>
                         <div className="p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
-                          <p className="text-yellow-800">{event.instructions}</p>
+                          <p className="text-yellow-800">{currentEvent.instructions}</p>
                         </div>
                       </div>
                     )}
@@ -671,14 +944,16 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
                       {Math.round(getProgressPercentage())}% Complete
                     </Badge>
                   </h3>
-                  <Button
-                    size="sm"
-                    onClick={() => setShowChecklistForm(!showChecklistForm)}
-                    className="gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add Item
-                  </Button>
+                  {isStudioOwner() && (
+                    <Button
+                      size="sm"
+                      onClick={() => setShowChecklistForm(!showChecklistForm)}
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Item
+                    </Button>
+                  )}
                 </div>
 
                 {showChecklistForm && (
@@ -766,8 +1041,19 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
 
           <TabsContent value="team" className="space-y-6">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle>Team Members & Collaboration</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setActiveTab("overview");
+                    setIsEditing(true);
+                  }}
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Manage Team
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -1112,57 +1398,111 @@ export function EventDetailsDialog({ event, trigger, onUpdate }: EventDetailsDia
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {teamMembers.map((member, index) => {
-                    const memberSubmissions = fileSubmissions.filter(sub =>
-                      sub.team_member_name.toLowerCase() === member.name.toLowerCase()
-                    );
+                  {teamMembers
+                    .filter(member => isStudioOwner() || member.name.toLowerCase() === profile?.full_name?.toLowerCase())
+                    .map((member, index) => {
+                      const memberSubmissions = fileSubmissions.filter(sub =>
+                        sub.team_member_name.toLowerCase() === member.name.toLowerCase()
+                      );
 
-                    return (
-                      <div key={index} className="p-4 border rounded-lg space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-semibold">{member.name}</h4>
-                            <Badge variant="outline" className={getRoleColor(member.role)}>
-                              {member.role.replace("_", " ")}
-                            </Badge>
-                          </div>
-                          <Button variant="outline" size="sm">
-                            <Upload className="h-3 w-3 mr-1" />
-                            Upload
-                          </Button>
-                        </div>
-
-                        <div className="space-y-2">
-                          {memberSubmissions.length > 0 ? (
-                            memberSubmissions.map(submission => (
-                              <div key={submission.id} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
-                                <div className="flex items-center gap-2">
-                                  {getFileIcon(submission.file_type)}
-                                  <span>{submission.file_name}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Badge variant="outline" className={getStatusColor(submission.review_status)}>
-                                    {submission.review_status}
-                                  </Badge>
-                                  <Button variant="ghost" size="sm">
-                                    <Eye className="h-3 w-3" />
+                      return (
+                        <div key={index} className="flex flex-col p-4 border rounded-lg space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-semibold">{member.name}</h4>
+                              <Badge variant="outline" className={getRoleColor(member.role)}>
+                                {member.role.replace("_", " ")}
+                              </Badge>
+                            </div>
+                            {isStudioOwner() ? (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <Link className="h-3 w-3 mr-1" />
+                                    Attach Drive Link
                                   </Button>
-                                </div>
-                              </div>
-                            ))
-                          ) : (
-                            <p className="text-sm text-muted-foreground text-center py-4">
-                              No submissions yet
-                            </p>
-                          )}
-                        </div>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80 space-y-3">
+                                  <h4 className="font-medium text-sm">Attach Drive Link for {member.name}</h4>
+                                  <Input
+                                    placeholder="https://drive.google.com/..."
+                                    value={driveLinkInputs[member.name] || ''}
+                                    onChange={(e) => setDriveLinkInputs(prev => ({ ...prev, [member.name]: e.target.value }))}
+                                  />
+                                  <Button
+                                    size="sm"
+                                    className="w-full"
+                                    disabled={isSubmittingLink[member.name] || !driveLinkInputs[member.name]?.trim()}
+                                    onClick={() => handleAttachDriveLink(member)}
+                                  >
+                                    {isSubmittingLink[member.name] ? "Attaching..." : "Attach Link"}
+                                  </Button>
+                                </PopoverContent>
+                              </Popover>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const driveLinkSub = memberSubmissions.find(sub => sub.submission_type === 'drive_link');
+                                  if (driveLinkSub && driveLinkSub.file_url) {
+                                    window.open(driveLinkSub.file_url, '_blank', 'noopener,noreferrer');
+                                  } else {
+                                    toast({
+                                      title: "No Drive Link",
+                                      description: "The studio owner hasn't attached a drive link yet.",
+                                    });
+                                  }
+                                }}
+                              >
+                                <Upload className="h-3 w-3 mr-1" />
+                                Upload
+                              </Button>
+                            )}
+                          </div>
 
-                        <div className="text-xs text-muted-foreground">
-                          {memberSubmissions.length} files uploaded
+                          <div className="space-y-2">
+                            {memberSubmissions.length > 0 ? (
+                              memberSubmissions.map(submission => (
+                                <div key={submission.id} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
+                                  <div className="flex items-center gap-2">
+                                    {/* Just use FileText as a fallback if getFileIcon is present, assuming it handles 'link' */}
+                                    {submission.submission_type === 'drive_link' ? <Link className="h-4 w-4" /> : getFileIcon(submission.file_type)}
+                                    {submission.submission_type === 'drive_link' ? (
+                                      <a href={submission.file_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                                        {submission.file_name}
+                                      </a>
+                                    ) : (
+                                      <span>{submission.file_name}</span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Badge variant="outline" className={getStatusColor(submission.review_status)}>
+                                      {submission.review_status}
+                                    </Badge>
+                                    <Button variant="ghost" size="sm" onClick={() => {
+                                      if (submission.submission_type === 'drive_link') {
+                                        window.open(submission.file_url, '_blank', 'noopener,noreferrer');
+                                      }
+                                    }}>
+                                      <Eye className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-sm text-muted-foreground text-center py-4">
+                                No submissions yet
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="text-xs text-muted-foreground">
+                            {memberSubmissions.length} files uploaded
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
               </CardContent>
             </Card>

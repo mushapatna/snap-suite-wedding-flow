@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Camera, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth"; // Updated import
+import { Logo } from "@/components/ui/Logo";
 import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
@@ -82,8 +83,7 @@ const Login = () => {
           Back to Home
         </Link>
         <div className="flex items-center justify-center mb-6">
-          <Camera className="h-8 w-8 text-primary mr-2" />
-          <span className="text-2xl font-bold text-primary">SnapSuite</span>
+          <Logo variant="full" className="h-16 w-auto object-contain" />
         </div>
       </motion.div>
 

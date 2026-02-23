@@ -8,6 +8,8 @@ from rest_framework.decorators import action
 from django.core.mail import send_mail
 from django.utils import timezone
 import uuid
+import secrets
+import string
 from rest_framework.views import APIView
 
 from django.db.models import Q
@@ -238,26 +240,61 @@ class TeamMemberContactViewSet(viewsets.ModelViewSet):
         )
         return qs
 
-    def perform_create(self, serializer):
-        member = serializer.save(owner=self.request.user)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         
-        # Auto-send invitation on create
-        member.invitation_token = uuid.uuid4()
-        member.invitation_sent_at = timezone.now()
-        member.status = 'sent'
-        member.save()
+        email = serializer.validated_data.get('email')
+        name = serializer.validated_data.get('name')
+        role = serializer.validated_data.get('role')
+        phone_number = serializer.validated_data.get('phone_number')
         
-        # Send Email (Console for now)
-        # Assuming frontend runs on 8080 or 5173. 
-        invite_link = f"http://localhost:5173/accept-invitation/{member.invitation_token}"
+        # Generate random password
+        alphabet = string.ascii_letters + string.digits
+        password = ''.join(secrets.choice(alphabet) for i in range(12))
+        
+        user_created = False
+        user = None
+        
+        if email:
+            try:
+                # Check if user exists
+                user = User.objects.filter(email=email).first()
+                if not user:
+                    username = email # Use email as username
+                    user = User.objects.create_user(username=username, email=email, password=password)
+                    user_created = True
+                
+                # Update Profile
+                # Profile is auto-created by signal, but we need to update details
+                if hasattr(user, 'profile'):
+                    profile = user.profile
+                    profile.full_name = name
+                    profile.role = role
+                    profile.phone_number = phone_number
+                    profile.save()
+                    
+            except Exception as e:
+                print(f"Error creating user: {e}")
+                # Don't block team member creation if user creation fails, but log it
+        
+        # Create TeamMemberContact
+        # We manually save instead of perform_create to handle the instance logic
+        member = serializer.save(owner=self.request.user, status='joined')
+        
+        headers = self.get_success_headers(serializer.data)
+        
+        response_data = serializer.data
+        if user_created:
+            response_data['generated_password'] = password
+            response_data['username'] = email
+        elif user:
+             # If user existed, we don't return password as we didn't set it
+             response_data['message'] = 'User already exists, added to team.'
+             
+        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
-        send_mail(
-            subject=f"Invitation to join {self.request.user.profile.company_name or 'Wedding Team'}",
-            message=f"Hi {member.name},\n\nYou have been invited to join the team. Click the link below to accept:\n\n{invite_link}\n\nBest,\n{self.request.user.username}",
-            from_email="system@weddingflow.com",
-            recipient_list=[member.email],
-            fail_silently=False,
-        )
+
 
     @action(detail=True, methods=['post'])
     def resend_invitation(self, request, pk=None):
@@ -307,6 +344,25 @@ class TeamMemberContactViewSet(viewsets.ModelViewSet):
             })
         except TeamMemberContact.DoesNotExist:
             return Response({'error': 'Invalid token'}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=True, methods=['post'])
+    def reset_password(self, request, pk=None):
+        member = self.get_object()
+        
+        # Check if user exists
+        try:
+            user = User.objects.get(email=member.email)
+        except User.DoesNotExist:
+             return Response({'error': 'User not found associated with this contact'}, status=status.HTTP_404_NOT_FOUND)
+             
+        # Generate random password
+        alphabet = string.ascii_letters + string.digits
+        password = ''.join(secrets.choice(alphabet) for i in range(12))
+        
+        user.set_password(password)
+        user.save()
+        
+        return Response({'password': password, 'message': 'Password reset successfully. Please share this new password with the team member.'}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'])
     def accept_invitation(self, request):

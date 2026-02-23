@@ -8,62 +8,65 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 43 38% 93%;
-    --foreground: 0 0% 25%;
+    /* EVENTPIXIO Light Theme */
+    --background: 210 40% 98%;
+    /* Very light blue-grey */
+    --foreground: 222.2 84% 4.9%;
 
-    --card: 43 38% 93%;
-    --card-foreground: 0 0% 25%;
+    --font-sans: 'Outfit', sans-serif;
+    --font-heading: 'Orbitron', sans-serif;
 
-    --popover: 43 38% 93%;
-    --popover-foreground: 0 0% 25%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
 
-    --primary: 14 35% 59%;
-    --primary-foreground: 43 38% 93%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
 
-    --secondary: 81 36% 76%;
-    --secondary-foreground: 0 0% 25%;
+    --primary: 195 85% 45%;
+    /* Cyan Blue from logo iris */
+    --primary-foreground: 210 40% 98%;
 
-    --muted: 81 36% 76%;
-    --muted-foreground: 0 0% 25%;
+    --secondary: 225 60% 95%;
+    /* Very light indigo */
+    --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --accent: 43 38% 93%;
-    --accent-foreground: 0 0% 25%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 195 85% 95%;
+    /* Light Cyan tint */
+    --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 263 85% 65%;
+    --ring: 195 85% 45%;
 
     --radius: 0.5rem;
 
     /* Modern gradients and effects */
-    --gradient-primary: linear-gradient(135deg, hsl(14 35% 59%), hsl(8 100% 84%));
-    --gradient-soft: linear-gradient(135deg, hsl(43 38% 93%), hsl(81 36% 76%));
-    --gradient-hero: linear-gradient(135deg, hsl(43 38% 93%), hsl(81 36% 76%));
-    --shadow-soft: 0 4px 6px -1px hsl(263 30% 85% / 0.1), 0 2px 4px -1px hsl(263 30% 85% / 0.06);
-    --shadow-medium: 0 10px 15px -3px hsl(263 30% 85% / 0.1), 0 4px 6px -2px hsl(263 30% 85% / 0.05);
-    --shadow-large: 0 20px 25px -5px hsl(263 30% 85% / 0.15), 0 10px 10px -5px hsl(263 30% 85% / 0.04);
+    --gradient-primary: linear-gradient(135deg, hsl(195 85% 45%), hsl(180 80% 40%));
+    --gradient-soft: linear-gradient(135deg, hsl(210 40% 98%), hsl(225 60% 95%));
+    --gradient-hero: linear-gradient(135deg, hsl(210 40% 100%), hsl(225 60% 98%));
+
+    --shadow-soft: 0 4px 6px -1px hsl(220 30% 85% / 0.1), 0 2px 4px -1px hsl(220 30% 85% / 0.06);
+    --shadow-medium: 0 10px 15px -3px hsl(220 30% 85% / 0.1), 0 4px 6px -2px hsl(220 30% 85% / 0.05);
+    --shadow-large: 0 20px 25px -5px hsl(220 30% 85% / 0.15), 0 10px 10px -5px hsl(220 30% 85% / 0.04);
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
+    /* EVENTPIXIO Dark Theme */
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
@@ -73,7 +76,8 @@ All colors MUST be HSL.
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
+    --primary: 195 85% 45%;
+    /* Keep primary vibrant */
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -90,7 +94,8 @@ All colors MUST be HSL.
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --ring: 195 85% 45%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
