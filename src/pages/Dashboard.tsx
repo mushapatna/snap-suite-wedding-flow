@@ -48,7 +48,13 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <WelcomeSection profile={profile as any} />
+          <WelcomeSection profile={profile ? {
+            id: profile.id,
+            full_name: (profile.full_name as string | null | undefined) ?? null,
+            company_name: (profile.company_name as string | null | undefined) ?? null,
+            plan_type: (profile.plan_type as string | null | undefined) ?? null,
+            role: profile.role ?? null,
+          } : null} />
         </motion.div>
 
         <motion.div

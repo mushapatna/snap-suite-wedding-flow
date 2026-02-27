@@ -20,22 +20,21 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/ui/Logo";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth, type User } from "@/hooks/useAuth";
+import { useAuth, type User, type UserRole } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useLocation } from "react-router-dom";
-
 
 interface DashboardHeaderProps {
   user: User | null;
 }
 
-const getRoleDisplayName = (roles: any[]) => {
+const getRoleDisplayName = (roles: UserRole[]) => {
   if (!roles.length) return "User";
   const role = roles[0].role;
   return role.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
 };
 
-const getRoleNavigation = (roles: any[]) => {
+const getRoleNavigation = (roles: UserRole[]) => {
   if (!roles.length) return [];
 
   const role = roles[0].role;

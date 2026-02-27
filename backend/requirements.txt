@@ -6,3 +6,4 @@ python-dotenv
 django-allauth>=64.0.0
 dj-rest-auth>=6.0.0
 requests>=2.31.0
+PyJWT>=2.8.0

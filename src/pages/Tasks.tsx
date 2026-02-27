@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
@@ -63,6 +63,14 @@ interface TasksGroupedByProject {
 type DateFilterType = "today" | "tomorrow" | "day_after" | "custom" | "all";
 type ProjectStatusFilter = "all" | "active" | "completed" | "archived";
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+    if (error instanceof Error && error.message) {
+        return error.message;
+    }
+
+    return fallback;
+};
+
 const Tasks = () => {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [groupedTasks, setGroupedTasks] = useState<TasksGroupedByProject>({});
@@ -78,37 +86,24 @@ const Tasks = () => {
     const { user, token } = useAuth();
     const navigate = useNavigate();
 
-    useEffect(() => {
-        if (token) {
-            fetchTasks();
-        }
-    }, [token]);
-
-    // Apply filters whenever tasks or filter states change
-    useEffect(() => {
-        if (tasks.length > 0) {
-            applyFilters();
-        }
-    }, [tasks, dateFilterType, customDate, projectStatusFilter]);
-
-    const fetchTasks = async () => {
+    const fetchTasks = useCallback(async () => {
         try {
-            const data = await api.get('/tasks/', token);
-            const tasksData = Array.isArray(data) ? data : (data.results || []);
+            const data = await api.get('/tasks/', token ?? undefined);
+            const tasksData = Array.isArray(data) ? (data as Task[]) : ((data.results as Task[] | undefined) || []);
             setTasks(tasksData);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error fetching tasks:', error);
             toast({
                 title: "Error",
-                description: "Failed to load tasks",
+                description: getErrorMessage(error, "Failed to load tasks"),
                 variant: "destructive",
             });
         } finally {
             setLoading(false);
         }
-    };
+    }, [token, toast]);
 
-    const applyFilters = () => {
+    const applyFilters = useCallback(() => {
         let filtered = [...tasks];
 
         // 1. Filter by Project Status
@@ -147,7 +142,7 @@ const Tasks = () => {
         }
 
         // Group filtered tasks
-        const grouped = filtered.reduce((acc: any, task: any) => {
+        const grouped = filtered.reduce<TasksGroupedByProject>((acc, task) => {
             const projectName = task.project_details?.couple_name || 'Unassigned Project';
             if (!acc[projectName]) {
                 acc[projectName] = [];
@@ -157,7 +152,21 @@ const Tasks = () => {
         }, {});
 
         setGroupedTasks(grouped);
-    };
+    }, [tasks, projectStatusFilter, dateFilterType, customDate]);
+
+    useEffect(() => {
+        if (token) {
+            fetchTasks();
+        }
+    }, [token, fetchTasks]);
+
+    useEffect(() => {
+        if (tasks.length > 0) {
+            applyFilters();
+        } else {
+            setGroupedTasks({});
+        }
+    }, [tasks, dateFilterType, customDate, projectStatusFilter, applyFilters]);
 
     const toggleTaskExpansion = (taskId: string) => {
         setExpandedTasks(prev =>
@@ -219,7 +228,7 @@ const Tasks = () => {
                     <div className="flex flex-wrap items-center gap-3">
                         {/* Due Date Filter */}
                         <div className="flex items-center gap-2">
-                            <Select value={dateFilterType} onValueChange={(val: any) => setDateFilterType(val)}>
+                            <Select value={dateFilterType} onValueChange={(val: DateFilterType) => setDateFilterType(val)}>
                                 <SelectTrigger className="w-[180px]">
                                     <CalendarIcon className="mr-2 h-4 w-4" />
                                     <SelectValue placeholder="Due Date" />
@@ -260,7 +269,7 @@ const Tasks = () => {
                         </div>
 
                         {/* Project Status Filter */}
-                        <Select value={projectStatusFilter} onValueChange={(val: any) => setProjectStatusFilter(val)}>
+                        <Select value={projectStatusFilter} onValueChange={(val: ProjectStatusFilter) => setProjectStatusFilter(val)}>
                             <SelectTrigger className="w-[180px]">
                                 <Filter className="mr-2 h-4 w-4" />
                                 <SelectValue placeholder="Project Status" />
