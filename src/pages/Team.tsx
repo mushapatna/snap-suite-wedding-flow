@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,8 @@ import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { AddTeamMemberDialog } from "@/components/ui/AddTeamMemberDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { api } from "@/lib/api";
+import { api, getApiErrorMessage, normalizeListResponse } from "@/lib/api";
+import type { ApiListResponse, TeamMemberDTO } from "@/lib/api-types";
 import {
   Users,
   Plus,
@@ -37,60 +38,51 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface TeamMember {
-  id: string;
-  name: string;
-  role: string;
-  phone_number: string | null;
-  whatsapp_number: string | null;
-  email: string | null;
-  status: string;
-  created_at: string;
-}
 
 const Team = () => {
   const { user, token } = useAuth();
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMemberDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
+  const [memberToDelete, setMemberToDelete] = useState<TeamMemberDTO | null>(null);
   const [processingActions, setProcessingActions] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (token) {
-      fetchTeamMembers();
-    }
-  }, [token]);
-
-  const fetchTeamMembers = async () => {
+  const fetchTeamMembers = useCallback(async () => {
     try {
-      const data = await api.get('/contacts/', token);
-      const members = Array.isArray(data) ? data : (data.results || []);
+      const data = await api.get<ApiListResponse<TeamMemberDTO>>('/contacts/', token);
+      const members = normalizeListResponse(data);
       setTeamMembers(members);
     } catch (error) {
       console.error("Error fetching team members:", error);
       toast({
         title: "Error",
-        description: "Failed to load team members",
+        description: getApiErrorMessage(error, "Failed to load team members"),
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, toast]);
+
+
+  useEffect(() => {
+    if (token) {
+      fetchTeamMembers();
+    }
+  }, [token, fetchTeamMembers]);
 
   const handleAddTeamMember = () => {
     fetchTeamMembers();
   };
 
-  const handleResendInvitation = async (member: TeamMember) => {
+  const handleResendInvitation = async (member: TeamMemberDTO) => {
     setProcessingActions(prev => ({ ...prev, [member.id]: true }));
 
     try {
-      await api.post(`/contacts/${member.id}/resend_invitation/`, {}, token);
+      await api.post<{ status: string }, Record<string, never>>(`/contacts/${member.id}/resend_invitation/`, {}, token);
 
       toast({
         title: "Invitation Resent",
@@ -98,11 +90,11 @@ const Team = () => {
       });
 
       fetchTeamMembers();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error resending invitation:", error);
       toast({
         title: "Failed to resend invitation",
-        description: error.message || "Please try again later",
+        description: getApiErrorMessage(error, "Please try again later"),
         variant: "destructive",
       });
     } finally {
@@ -114,7 +106,7 @@ const Team = () => {
     if (!memberToDelete) return;
 
     try {
-      await api.delete(`/contacts/${memberToDelete.id}/`, token);
+      await api.delete<{ detail?: string }>(`/contacts/${memberToDelete.id}/`, token);
       toast({
         title: "Team member removed",
         description: `${memberToDelete.name} has been removed from your team`,
@@ -124,7 +116,7 @@ const Team = () => {
       console.error("Error deleting team member:", error);
       toast({
         title: "Error",
-        description: "Failed to remove team member",
+        description: getApiErrorMessage(error, "Failed to remove team member"),
         variant: "destructive",
       });
     } finally {

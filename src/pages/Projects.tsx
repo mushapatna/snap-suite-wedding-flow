@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { api } from "@/lib/api";
+import { api, getApiErrorMessage, normalizeListResponse } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,17 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { useAuth } from "@/hooks/useAuth";
 
-interface Project {
-  id: string;
-  couple_name: string;
-  event_date: string;
-  event_type: string;
-  location: string;
-  service_type: string;
-  status: string;
-  progress_percentage: number;
-  created_at: string;
-}
+import type { ApiListResponse, ProjectDTO } from "@/lib/api-types";
 
 interface ProjectKPIs {
   total: number;
@@ -39,7 +29,7 @@ interface ProjectKPIs {
 }
 
 const Projects = () => {
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<ProjectDTO[]>([]);
   const [kpis, setKPIs] = useState<ProjectKPIs>({
     total: 0,
     inProgress: 0,
@@ -51,30 +41,19 @@ const Projects = () => {
   const { user, token } = useAuth();
   const navigate = useNavigate(); // token is needed for api calls
 
-  useEffect(() => {
-    if (token) {
-      fetchProjects();
-    }
-  }, [token]);
-
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     try {
-      const projectsData = await api.get('/projects/', token);
-
-      // DRF returns list of objects for ModelViewSet list action by default
-      // Check if paginated response or direct list logic is needed if settings changed
-      // Assuming list based on previous tool outputs showing standard ViewSet
-
-      const pData = Array.isArray(projectsData) ? projectsData : (projectsData.results || []);
+      const projectsData = await api.get<ApiListResponse<ProjectDTO>>('/projects/', token);
+      const pData = normalizeListResponse(projectsData);
 
       setProjects(pData);
 
       // Calculate KPIs
       const total = pData.length;
-      const inProgress = pData.filter((p: Project) => p.status === 'active').length;
-      const completed = pData.filter((p: Project) => p.status === 'completed').length;
+      const inProgress = pData.filter((p) => p.status === 'active').length;
+      const completed = pData.filter((p) => p.status === 'completed').length;
       const averageProgress = total > 0
-        ? Math.round(pData.reduce((sum: number, p: Project) => sum + (p.progress_percentage || 0), 0) / total)
+        ? Math.round(pData.reduce((sum, p) => sum + (p.progress_percentage || 0), 0) / total)
         : 0;
 
       setKPIs({
@@ -83,17 +62,24 @@ const Projects = () => {
         completed,
         averageProgress
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching projects:', error);
       toast({
         title: "Error",
-        description: "Failed to load projects",
+        description: getApiErrorMessage(error, "Failed to load projects"),
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, toast]);
+
+
+  useEffect(() => {
+    if (token) {
+      fetchProjects();
+    }
+  }, [token, fetchProjects]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

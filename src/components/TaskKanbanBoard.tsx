@@ -1,5 +1,5 @@
 
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { DragDropContext, Droppable, Draggable, type DropResult } from "react-beautiful-dnd";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -45,7 +45,7 @@ export function TaskKanbanBoard({ tasks, columns, onStatusChange, title }: TaskK
         return tasks.filter((task) => task.status === status);
     };
 
-    const onDragEnd = (result: any) => {
+    const onDragEnd = (result: DropResult) => {
         if (!result.destination) return;
 
         const { draggableId, destination } = result;
